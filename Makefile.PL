@@ -12,21 +12,27 @@ use ExtUtils::MakeMaker;
 my $tclsh = 'tclsh';
 my $tclconfig;
 my $buildspec;
-my $usestubs;
+my $usestubs = 1;
 my $libpath;
 my $incpath;
 my $wince;
 my @extraargs;
 
-GetOptions("tclsh=s", \$tclsh,
-	   "tclconfig=s", \$tclconfig,
-	   "buildspec", \$buildspec,
-	   "usestubs", \$usestubs,
+GetOptions("tclsh=s", \$tclsh,         # Use this tclsh executable as a
+                                       # base to find the lib info needed
+	   "tclconfig=s", \$tclconfig, # Use the specified Tcl config file
+                                       # instead of basing the values on
+                                       # the tclsh exe found
+	   "buildspec", \$buildspec,   # Used with --tclconfig, use the
+                                       # build (instead of install) values
+                                       # for determining lib info
+	   "usestubs!", \$usestubs,    # we want to use the Tcl stubs
+                                       # mechanism by default
 	  )
     || die <<EOT;
 
 Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>]
-                        [--buildspec] [--usestubs] [<makemaker opts>...]
+                        [--buildspec] [--nousestubs] [<makemaker opts>...]
 
 or for WinCE cross-compilation:
 
@@ -99,6 +105,9 @@ if ($tclconfig) {
     close(TCLSH);
     print $tclcfg;
     my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)\n/gm;
+
+    # This is to allow propagation of this value to sub-Makefile.PLs
+    $ENV{'TCLSH_PROG'} = $tclsh;
 
     if (0 && -f $tclcfg{'tclConfig.sh'}) {
 	# Retrieve all info based on tclConfig.sh
