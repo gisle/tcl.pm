@@ -99,7 +99,18 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 	sv = newSVnv(objPtr->internalRep.doubleValue);
     }
     else if (objPtr->typePtr == tclBooleanTypePtr) {
-	sv = newSVsv(boolSV(objPtr->internalRep.longValue != 0));
+	/*
+	 * Booleans can originate as words (yes/true/...), so if there is a
+	 * string rep, use it instead.  We could check if the first byte
+	 * isdigit().  No need to check utf-8 as the all valid boolean words
+	 * are ascii-7.
+	 */
+	if (objPtr->typePtr == NULL) {
+	    sv = newSVsv(boolSV(objPtr->internalRep.longValue != 0));
+	} else {
+	    str = Tcl_GetStringFromObj(objPtr, &len);
+	    sv = newSVpvn(str, len);
+	}
     }
     else if (objPtr->typePtr == tclByteArrayTypePtr) {
 	str = Tcl_GetByteArrayFromObj(objPtr, &len);
@@ -112,16 +123,28 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 	 * and user's expectations of how data will be passed in.  The key is
 	 * that a stringified-list and pure-list should be operable in the
 	 * same way in Perl.
+	 *
+	 * We have to watch for "empty" lists, which could equate to the
+	 * empty string.  Tcl's literal object sharing means that "" could
+	 * be typed as a list, although we don't want to see it that way.
+	 * Just treat empty list objects as an empty (not undef) SV.
 	 */
-	int objc, i;
+	int objc;
 	Tcl_Obj **objv;
-	AV *av = newAV();
 
 	Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv);
-	for (i = 0; i < objc; i++) {
-	    av_push(av, SvFromTclObj(aTHX_ objv[i]));
+	if (objc) {
+	    int i;
+	    AV *av = newAV();
+
+	    for (i = 0; i < objc; i++) {
+		av_push(av, SvFromTclObj(aTHX_ objv[i]));
+	    }
+	    sv = newRV_noinc((SV *) av);
 	}
-	sv = newRV_noinc((SV *) av);
+	else {
+	    sv = newSVpvn("", 0);
+	}
     }
     /* tclStringTypePtr is true unicode */
     /* tclWideIntTypePtr is 64-bit int */

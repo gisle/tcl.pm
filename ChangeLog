@@ -1,3 +1,11 @@
+2004-04-22  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (SvFromTclObj): For boolean types, use the string value
+	if it's not empty, as booleans that came from strings are often
+	not 0/1.  For list types, use "" for empty lists instead of an
+	empty AV.  This corrects a problem with Tcl literal sharing where
+	"" can be marked as a list, although the string is intended.
+
 2004-04-21  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (Tcl_EvalInPerl): create ::perl::Eval proc in Tcl_Init.
