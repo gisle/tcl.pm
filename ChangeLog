@@ -1,3 +1,8 @@
+2004-04-06  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs: use ANSI prototypes for some functions.
+	Remove use of PL_na in favor of SvPV_nolen.
+
 2004-04-01  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.pm (call): define tie'd var to "" if undefined before setting.

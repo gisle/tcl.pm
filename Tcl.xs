@@ -1,3 +1,15 @@
+/* 
+ * Tcl.xs --
+ *
+ *	This file contains XS code for the Perl's Tcl bridge module.
+ *
+ * Copyright (c) 1994-1997, Malcolm Beattie
+ * Copyright (c) 2003-2004, Vadim Konovalov
+ * Copyright (c) 2004 ActiveState Corp., a division of Sophos PLC
+ *
+ * RCS: @(#) $Id$
+ */
+
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -23,11 +35,8 @@ typedef AV *Tcl__Var;
 
 static int findexecutable_called = 0;
 
-int Tcl_PerlCallWrapper(clientData, interp, argc, argv)
-ClientData clientData;
-Tcl_Interp *interp;
-int argc;
-char **argv;
+int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
+	int argc, char **argv)
 {
     dSP;
     AV *av = (AV *) clientData;
@@ -66,7 +75,7 @@ char **argv;
     rc = TCL_OK;
     
     if (SvOK(sv))
-	Tcl_SetResult(interp, SvPV(sv, PL_na), TCL_VOLATILE);
+	Tcl_SetResult(interp, SvPV_nolen(sv), TCL_VOLATILE);
     /*
      * If the routine returned undef, it indicates that it has done the
      * SetResult itself and that we should return TCL_ERROR
@@ -78,8 +87,7 @@ char **argv;
 }
 
 void
-Tcl_PerlCallDeleteProc(clientData)
-ClientData clientData;
+Tcl_PerlCallDeleteProc(ClientData clientData)
 {
     AV *av = (AV *) clientData;
     
@@ -133,12 +141,8 @@ char *caller;
 }
 
 char *
-var_trace(clientData, interp, name1, name2, flags)
-ClientData clientData;
-Tcl_Interp *interp;
-char *name1;
-char *name2;
-int flags;
+var_trace(ClientData clientData, Tcl_Interp *interp,
+	char *name1, char *name2, int flags)
 {
     if (flags & TCL_TRACE_READS) {
         warn("TCL_TRACE_READS\n");
@@ -174,7 +178,7 @@ Tcl_Eval(interp, script)
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
-	if (Tcl_Eval(interp, SvPV(sv_mortalcopy(script), PL_na)) != TCL_OK)
+	if (Tcl_Eval(interp, SvPV_nolen(sv_mortalcopy(script))) != TCL_OK)
 	    croak(Tcl_GetStringResult(interp));
 	prepare_Tcl_result(interp, "Tcl::Eval");
 	SPAGAIN;
@@ -202,7 +206,7 @@ Tcl_GlobalEval(interp, script)
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
-	if (Tcl_GlobalEval(interp, SvPV(sv_mortalcopy(script), PL_na)) != TCL_OK)
+	if (Tcl_GlobalEval(interp, SvPV_nolen(sv_mortalcopy(script))) != TCL_OK)
 	    croak(Tcl_GetStringResult(interp));
 	prepare_Tcl_result(interp, "Tcl::GlobalEval");
 	SPAGAIN;
@@ -279,7 +283,7 @@ Tcl_icall(interp, proc, ...)
 		 * its arguments more than once.
 		 */
 		proc = sv_mortalcopy(*++SP);
-		argv[i] = SvPV(proc, PL_na);
+		argv[i] = SvPV_nolen(proc);
 	    }
 	    argv[argc] = (char *) 0;
 	    SP -= items;
@@ -350,10 +354,10 @@ Tcl_icall(interp, proc, ...)
 	    if (!fixme_warned) {
 		warn("FIXME. slowdown because of frustration, command=%s\n"
 		     " (this warning is printed only once)\n",
-		    SvPV(svline,PL_na));
+		    SvPV_nolen(svline));
 		fixme_warned = 1;
 	    }
-            if (Tcl_Eval(interp, SvPV(sv_mortalcopy(svline), PL_na)) != TCL_OK) {
+            if (Tcl_Eval(interp, SvPV_nolen(sv_mortalcopy(svline))) != TCL_OK) {
        	        croak(Tcl_GetStringResult(interp));
 	    }
 #endif /* 0 */
@@ -433,7 +437,7 @@ Tcl_AppendResult(interp, ...)
 	int	i = NO_INIT
     CODE:
 	for (i = 1; i <= items; i++)
-	    Tcl_AppendResult(interp, SvPV(ST(i), PL_na), NULL);
+	    Tcl_AppendResult(interp, SvPV_nolen(ST(i)), NULL);
 	RETVAL = Tcl_GetStringResult(interp);
     OUTPUT:
 	RETVAL
@@ -580,7 +584,7 @@ FETCH(av, key = NULL)
 	    croak("bad object passed to Tcl::Var::FETCH");
 	if (AvFILL(av) == 2)
 	    flags = (int) SvIV(*av_fetch(av, 2, FALSE));
-	varname1 = SvPV(*av_fetch(av, 1, FALSE), PL_na);
+	varname1 = SvPV_nolen(*av_fetch(av, 1, FALSE));
 	RETVAL = key ? Tcl_GetVar2(interp, varname1, key, flags)
 		     : Tcl_GetVar(interp, varname1, flags);
     OUTPUT:
@@ -612,7 +616,7 @@ STORE(av, str1, str2 = NULL)
 	    croak("bad object passed to Tcl::Var::STORE");
 	if (AvFILL(av) == 2)
 	    flags = (int) SvIV(*av_fetch(av, 2, FALSE));
-	varname1 = SvPV(*av_fetch(av, 1, FALSE), PL_na);
+	varname1 = SvPV_nolen(*av_fetch(av, 1, FALSE));
 	/*
 	 * hash stores have key str1 and value str2
 	 * scalar ones just use value str1
