@@ -99,7 +99,7 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 	sv = newSVnv(objPtr->internalRep.doubleValue);
     }
     else if (objPtr->typePtr == tclBooleanTypePtr) {
-	sv = newSViv((objPtr->internalRep.longValue != 0));
+	sv = newSVsv(boolSV(objPtr->internalRep.longValue != 0));
     }
     else if (objPtr->typePtr == tclByteArrayTypePtr) {
 	str = Tcl_GetByteArrayFromObj(objPtr, &len);
@@ -728,12 +728,12 @@ Tcl_AppendResult(interp, ...)
     OUTPUT:
 	RETVAL
 
-int
+SV *
 Tcl_DeleteCommand(interp, cmdName)
 	Tcl	interp
 	char *	cmdName
     CODE:
-	RETVAL = Tcl_DeleteCommand(interp, cmdName) == 0;
+	RETVAL = boolSV(Tcl_DeleteCommand(interp, cmdName) == TCL_OK);
     OUTPUT:
 	RETVAL
 
@@ -790,24 +790,24 @@ Tcl_GetVar2(interp, varname1, varname2, flags = 0)
     OUTPUT:
 	RETVAL
 
-int
+SV *
 Tcl_UnsetVar(interp, varname, flags = 0)
 	Tcl	interp
 	char *	varname
 	int	flags
     CODE:
-	RETVAL = Tcl_UnsetVar2(interp, varname, NULL, flags) == TCL_OK;
+	RETVAL = boolSV(Tcl_UnsetVar2(interp, varname, NULL, flags) == TCL_OK);
     OUTPUT:
 	RETVAL
 
-int
+SV *
 Tcl_UnsetVar2(interp, varname1, varname2, flags = 0)
 	Tcl	interp
 	char *	varname1
 	char *	varname2
 	int	flags
     CODE:
-	RETVAL = Tcl_UnsetVar2(interp, varname1, varname2, flags) == TCL_OK;
+	RETVAL = boolSV(Tcl_UnsetVar2(interp, varname1, varname2, flags) == TCL_OK);
     OUTPUT:
 	RETVAL
 
