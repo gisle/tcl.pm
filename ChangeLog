@@ -1,3 +1,7 @@
+2004-04-14  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* t/call.t (new): some tests for call and icall functions
+
 2004-04-13  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (SvFromTclObj): correct if/else if for objPtr == NULL and
