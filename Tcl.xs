@@ -150,12 +150,17 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 
     /*
      * Try a user-supplied Tcl dll to start with.
+     * If the var is supplied, force this to be correct or error out.
      */
     envdll = getenv("PERL_TCL_DLL");
     if (envdll != NULL) {
 	handle = dlopen(envdll, RTLD_NOW | RTLD_GLOBAL);
 	if (handle) {
 	    memcpy(libname, envdll, MAX_PATH);
+	} else {
+	    warn("NpLoadLibrary: could not find PERL_TCL_DLL Tcl dll: '%s'",
+		    envdll);
+	    return TCL_ERROR;
 	}
     }
 

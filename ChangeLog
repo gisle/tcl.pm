@@ -1,3 +1,8 @@
+2004-09-10  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (NpLoadLibrary): make PERL_TCL_DLL check error if no file
+	is found.
+
 2004-06-01  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (NpLoadLibrary): minor code cleanup
