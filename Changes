@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl.
 
+0.84    13-sept-2004
+	- Tcl.pm changes to be more perlTk compatible
+	- Makefile.PL contains few more OS-dependent processing
+
 0.81    09-may-2004
 	- some Tcl.xs improvements, Makefile.PL now requires Tcl/Tk version
 	  8.4 (Jeff Hobbs)

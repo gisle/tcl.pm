@@ -1,3 +1,10 @@
+2004-09-13  Vadim Konovalov <vadim@vkonovalov.ru>
+
+	* Tcl.pm: version 0.84
+	callbacks of type [$Tcl_Tk_widget, 'method name', ...]
+	* Makefile.pl: Mac OS X wisdom from Daniel A. Steffen
+	* Changes: brief summary for 0.84
+
 2004-09-10  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (NpLoadLibrary): make PERL_TCL_DLL check error if no file

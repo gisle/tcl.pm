@@ -16,6 +16,7 @@ my $usestubs;
 my $libpath;
 my $incpath;
 my $wince;
+my @extraargs;
 
 GetOptions("tclsh=s", \$tclsh,
 	   "tclconfig=s", \$tclconfig,
@@ -80,10 +81,17 @@ if ($tclconfig) {
 	if ($^O eq 'MSWin32') {
 	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/bin\\\"";
 	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_DLL_FILE'}\\\""; 
+	} elsif ($^O eq 'darwin' && $tclcfg{'TCL_STUB_LIB_PATH'} =~ /\.framework/ ) {
+	    (my $fmk = $tclcfg{'TCL_STUB_LIB_PATH'}) =~ s/(?<=\.framework).*//;
+	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"";
+	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\"";
 	} else {
 	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/lib\\\"";
 	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\""; 
 	}
+    } elsif ($^O eq 'darwin' && $libpath =~ /-framework/ ) {
+	@extraargs = (dynamic_lib => {OTHERLDFLAGS => $libpath});
+	$libpath = "";
     }
 } else {
     open(TCLSH, "$tclsh tclcfg.tcl |") or die "error starting tclsh: $!\n";
@@ -138,6 +146,7 @@ WriteMakefile(
     LIBS => ["$libpath"],
     INC => "$incpath",
     DEFINE => $defs,
+    @extraargs,
 );
 
 #EOS
