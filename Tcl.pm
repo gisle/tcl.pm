@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.76';
+$Tcl::VERSION = '0.77';
 
 =head1 NAME
 
@@ -298,7 +298,11 @@ sub call {
     for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
 	my $arg = $args[$argcnt];
 	my $ref = ref($arg);
-	next unless $ref;
+	#next unless $ref;
+	unless ($ref) {
+	    $args[$argcnt] = "$args[$argcnt]"; # stringifying will prevent from 1 => 1.0 TODO : FIXME
+	    next;
+	}
 	if ($ref eq 'CODE') {
 	    # We have been passed something like \&subroutine
 	    # Create a proc in Tcl that invokes this subroutine (no args)
@@ -363,6 +367,20 @@ sub call {
 	if ($@) {
 	    confess "Tcl error '$@' while invoking scalar result call:\n" .
 		"\t\"@args\"";
+	}
+	return $res;
+    }
+}
+
+# wcall is simple wrapper to 'call' but it tries to search $res in %anon_hash
+# This implementation is temporary
+sub wcall {
+    if (wantarray) {
+	return call(@_);
+    } else {
+	my $res = call(@_);
+	if (exists $anon_refs{$res}) {
+	    return $anon_refs{$res};
 	}
 	return $res;
     }
