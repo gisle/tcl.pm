@@ -2,7 +2,7 @@ Changes
 ChangeLog
 TODO
 Makefile.PL		Tcl extension makefile writer
-ceMakefile.pl		makefile writer for WinCE cross-compilation
+ceMakefile.PL		makefile writer for WinCE cross-compilation
 MANIFEST		This list of files
 README			Introduction to the Tcl extension
 Tcl.pm			Tcl extension module
