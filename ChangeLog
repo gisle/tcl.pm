@@ -1,3 +1,10 @@
+2004-05-06  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs: enhance stubs-based initialization to check for a
+	preloaded Tcl dll as well as for stubs-based dll that is
+	tclkit-based.  This requires maintaining the first created interp
+	through the lifetime of the module.
+
 2004-05-04  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.pm: bump to 0.81 and add commands for icall and invoke.
