@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl.
 
+0.77    17-apr-2004
+	- quick fix of 1=>1.0 problem
+	- add wcall wrapper to Tcl.pm
+
 0.76    17-apr-2004
 	- many improvements in Tcl.pm, Tcl.xs from Jeff Hobbs
 	- many improvements in Tcl.pm, Tcl.xs from Gisle Aas
