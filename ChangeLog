@@ -1,5 +1,7 @@
 2004-04-01  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* Tcl.pm (call): define tie'd var to "" if undefined before setting.
+
 	* Tcl.xs: code cleanup to squelch AIX compiler warnings
 
 2004-03-22  Jeff Hobbs  <jeffh@ActiveState.com>

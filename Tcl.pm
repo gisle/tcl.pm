@@ -338,6 +338,7 @@ sub call {
 		$anon_refs{$nm}++;
 		my $s = $$arg;
 		tie $$arg, 'Tcl::Var', $interp, $nm;
+		$s = '' unless defined $s;
 		$$arg = $s;
 	    }
 	    $args[$argcnt] = $nm; # ... and substitute its name
@@ -358,11 +359,23 @@ sub call {
 	}
 	elsif (ref($arg) eq 'ARRAY') {
 	    if (ref($arg->[0]) eq 'CODE') {
-		$args[$argcnt] = $interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
+		# This implements subroutine call with args from an array ref
+		# XXX needs testing
+		$args[$argcnt] =
+		    $interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
 	    }
+#	    elsif (!ref($arg->[0])) {
 	    else {
-		$args[$argcnt] = join ' ', @$arg;
+		# should properly turn ARRAY into Tcl list
+		$args[$argcnt] = join(' ', @$arg);
 	    }
+#	    elsif (!ref($arg->[0])) {
+#		no strict "refs";
+#		$args[$argcnt] = $interp->create_tcl_sub(sub {&{"$arg->[0]"}(@$arg[1..$#$arg])});
+#	    }
+#	    else {
+#		die "WTF am I doing here?";
+#	    }
 	}
     }
     my (@res,$res);
