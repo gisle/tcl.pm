@@ -1,5 +1,11 @@
 2004-04-17  Vadim Konovalov  <vkonovalov@peterstar.ru>
 
+	* Tcl.pm (call): add hack to prevent 1=>1.0
+	* Tcl.pm: add wcall wrapper to 'call' function
+	* Changes: brief summary of changes between 0.76 and 0.77
+	
+2004-04-17  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
 	* Makefile.PL: fix WinCE case, check if Tcl version supported
 	* README: change WinCE explanations; add authors; change file
 	format to be more consistent with other modules
