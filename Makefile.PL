@@ -24,7 +24,7 @@ while (1) {
 	$buildspec = 1;
     }
     else {
-	die "unknown option '$opt', must be --tclsh\n";
+	die "unknown option '$opt', must be --tclsh, --tclconfig or --buildspec\n";
     }
 }
 
