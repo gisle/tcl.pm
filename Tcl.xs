@@ -31,8 +31,6 @@
 
 #include <tcl.h>
 
-#define Tcl_result(interp) Tcl_GetStringResult(interp)
-#define Tcl_DESTROY(interp) Tcl_DeleteInterp(interp)
 
 typedef Tcl_Interp *Tcl;
 typedef AV *Tcl__Var;
@@ -387,6 +385,10 @@ Tcl_new(class = "Tcl")
 char *
 Tcl_result(interp)
 	Tcl	interp
+    CODE:
+	RETVAL = Tcl_GetStringResult(interp);
+    OUTPUT:
+	RETVAL
 
 void
 Tcl_Eval(interp, script)
@@ -676,6 +678,8 @@ Tcl_icall(interp, sv, ...)
 void
 Tcl_DESTROY(interp)
 	Tcl	interp
+    CODE:
+	Tcl_DeleteInterp(interp);
 
 void
 Tcl_Init(interp)
