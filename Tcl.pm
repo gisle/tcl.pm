@@ -272,7 +272,7 @@ See http://www.perl.com/perl/misc/Artistic.html
 use strict;
 use DynaLoader;
 unless (defined $Tcl::Tk::VERSION) {
-  package Tcl::Tk; # define empty package
+    package Tcl::Tk; # define empty package
 }
 use vars qw(@ISA);
 @ISA = qw(DynaLoader Tcl::Tk);
@@ -303,108 +303,112 @@ bootstrap Tcl;
 
 #TODO make better wording here
 # %anon_refs keeps track of anonymous subroutines that were created with
-# "CreateComand" method during process of transformation of arguments for "call"
-# and other stuff such as scalar refs and so on.
-# (TODO -- find out how to check for refcounting and proper releasing of resources)
+# "CreateComand" method during process of transformation of arguments for
+# "call" and other stuff such as scalar refs and so on.
+# (TODO -- find out how to check for refcounting and proper releasing of
+# resources)
+
 my %anon_refs;
 
 # subroutine "call" checks for its parameters, adopts them and calls "icall"
 # method which implemented in Tcl.xs file and does essential work
 sub call {
-  if (0) {
-    local $"=',';
-    print STDERR "{{@_}}\n";
-  };
-  # look for CODE and ARRAY refs and substitute them with working code fragments
-  my $interp = shift;
-  my @args = @_; # this could be optimized
-  for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
-    my $arg = $args[$argcnt];
-    if (ref($arg) eq 'CODE') {
-      $args[$argcnt] = $interp->create_tcl_sub($arg);
+    if (0) {
+	local $"=',';
+	print STDERR "{{@_}}\n";
+    };
+    # look for CODE and ARRAY refs and substitute them with working code
+    # fragments
+    my $interp = shift;
+    my @args = @_; # this could be optimized
+    for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
+	my $arg = $args[$argcnt];
+	if (ref($arg) eq 'CODE') {
+	    $args[$argcnt] = $interp->create_tcl_sub($arg);
+	}
+	elsif (ref($arg) eq 'Tcl::Tk::Widget' || ref($arg) eq 'Tcl::Tk::Widget::MainWindow') {
+	    $args[$argcnt] = $$arg; # this trick will help manipulate widgets
+	}
+	elsif (ref($arg) eq 'SCALAR') {
+	    my $nm = "$arg"; # stringify scalar ref ...
+	    $nm =~ s/\W/_/g;
+	    unless (exists $anon_refs{$nm}) {
+		$anon_refs{$nm}++;
+		my $s = $$arg;
+		tie $$arg, 'Tcl::Var', $interp, $nm;
+		$$arg = $s;
+	    }
+	    $args[$argcnt] = $nm; # ... and substitute its name
+	}
+	if (ref($arg) eq 'REF' and ref($$arg) eq 'SCALAR') {
+	    # this is a very special case: if we see construct like \\"xy"
+	    # then we must prepare TCL-events variables such as TCL
+	    # variables %x, %y and so on, and next must be code reference
+	    # for subroutine that will use those variables.
+	    # TODO - implement better way, using OO and blessing into
+	    # special package
+	    if (ref($args[$argcnt+1]) ne 'CODE') {
+		warn "CODE reference expected after description of event fields";
+		next;
+	    }
+	    $args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$$$arg);
+	    splice @args, $argcnt+1, 1;
+	}
+	elsif ((ref($arg) eq 'ARRAY') and (ref($arg->[0]) eq 'CODE')) {
+	    $args[$argcnt] = $interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
+	    die "Implement this! (array ref that means subroutine and its parameters)";
+	}
     }
-    elsif (ref($arg) eq 'Tcl::Tk::Widget' || ref($arg) eq 'Tcl::Tk::Widget::MainWindow') {
-      $args[$argcnt] = $$arg; # this trick will help manipulate widgets
+    my (@res,$res);
+    eval {
+	@res = $interp->icall(@args);
+    };
+    if ($@) {
+	confess "Tcl error $@ while invoking call\n \"@args\"";
     }
-    elsif (ref($arg) eq 'SCALAR') {
-      my $nm = "$arg"; # stringify scalar ref ...
-      $nm =~ s/\W/_/g;
-      unless (exists $anon_refs{$nm}) {
-        $anon_refs{$nm}++;
-	my $s = $$arg;
-	tie $$arg, 'Tcl::Var', $interp, $nm;
-	$$arg = $s;
-      }
-      $args[$argcnt] = $nm; # ... and substitute its name
-    }
-    if (ref($arg) eq 'REF' and ref($$arg) eq 'SCALAR') {
-      # this is a very special case: if we see construct like \\"xy" then
-      # we must prepare TCL-events variables such as TCL variables %x, %y
-      # and so on, and next must be code reference for subroutine that will
-      # use those variables.
-      # TODO - implement better way, using OO and blessing into special package
-      if (ref($args[$argcnt+1]) ne 'CODE') {
-	warn "CODE reference expected after description of event fields";
-	next;
-      }
-      $args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$$$arg);
-      splice @args, $argcnt+1, 1;
-    }
-    elsif ((ref($arg) eq 'ARRAY') and (ref($arg->[0]) eq 'CODE')) {
-      $args[$argcnt] = $interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
-      die "Implement this! (array ref that means subroutine and its parameters)";
-    }
-  }
-  my (@res,$res);
-  eval {
-    @res = $interp->icall(@args);
-  };
-  if ($@) {
-    confess "Tcl error $@ while invoking call\n \"@args\"";
-  }
-  return @res if wantarray;
-  return $res[0];
+    return @res if wantarray;
+    return $res[0];
 }
 
 # create_tcl_sub will create TCL sub that will invoke perl anonymous sub
 # if $events variable is specified then special processing will be
 # performed to provide needed '%' variables
-# if $tclname is specified then procedure will have namely that name, otherwise
-# it will have machine-readable name
+# if $tclname is specified then procedure will have namely that name,
+# otherwise it will have machine-readable name
 # returns tcl script suitable for using in tcl events
 my %Ev_helper;
 sub create_tcl_sub {
-  my ($interp,$sub,$events,$tclname) = @_;
-  unless ($tclname) {
-    $tclname = "$sub"; # stringify subroutine ...
-    $tclname =~ s/\W/_/g;
-  }
-  unless (exists $anon_refs{$tclname}) {
-    $anon_refs{$tclname}++;
-    $interp->CreateCommand($tclname, $sub);
-  }
-  if ($events) {
-    $tclname = (join '', map {"set _ptcl_ev$_ %$_;"} split '', $events) . "$tclname";
-    $tclname =~ s/_ptcl_ev(?:#|%)/"_ptcl_ev".($1 eq '#'?'_sharp':'_perc')/eg;
-    for (split '', $events) {
-      $Ev_helper{$_} = $interp;
+    my ($interp,$sub,$events,$tclname) = @_;
+    unless ($tclname) {
+	$tclname = "$sub"; # stringify subroutine ...
+	$tclname =~ s/\W/_/g;
     }
-  }
-  $tclname;
+    unless (exists $anon_refs{$tclname}) {
+	$anon_refs{$tclname}++;
+	$interp->CreateCommand($tclname, $sub);
+    }
+    if ($events) {
+	$tclname = (join '', map {"set _ptcl_ev$_ %$_;"} split '', $events) . "$tclname";
+	$tclname =~ s/_ptcl_ev(?:\#|%)/"_ptcl_ev".($1 eq '#'?'_sharp':'_perc')/eg;
+	for (split '', $events) {
+	    $Ev_helper{$_} = $interp;
+	}
+    }
+    $tclname;
 }
 sub Ev {
-  my $s = shift;
-  if (length($s)>1) {
-    warn "Event variable must have length 1";
-    return;
-  }
-  if ($s eq '%') {$s = '_perc'}
-  elsif ($s eq '#') {$s = '_sharp'}
-  return $Ev_helper{$s}->GetVar("_ptcl_ev$s");
+    my $s = shift;
+    if (length($s)>1) {
+	warn "Event variable must have length 1";
+	return;
+    }
+    if ($s eq '%') {$s = '_perc'}
+    elsif ($s eq '#') {$s = '_sharp'}
+    return $Ev_helper{$s}->GetVar("_ptcl_ev$s");
 }
 sub ev_sub {
-  my ($interp,$events,$sub) = @_;
-  return $interp->create_tcl_sub($sub,$events);
+    my ($interp,$events,$sub) = @_;
+    return $interp->create_tcl_sub($sub,$events);
 }
 
 
