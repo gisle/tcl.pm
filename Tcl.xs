@@ -211,6 +211,63 @@ TclObjFromSv(pTHX_ SV *sv)
     return objPtr;
 }
 
+int Tcl_EvalInPerl(ClientData clientData, Tcl_Interp *interp,
+	int objc, Tcl_Obj *CONST objv[])
+{
+    dTHX; /* fetch context */
+    dSP;
+    I32 count;
+    SV *sv;
+    int rc;
+
+    /*
+     * This is the command created in Tcl to eval stuff in Perl
+     */
+
+    if (objc != 2) {
+	Tcl_WrongNumArgs(interp, 1, objv, "string");
+    }
+
+    ENTER;
+    SAVETMPS;
+
+    PUSHMARK(sp);
+    PUTBACK;
+    count = perl_eval_sv(sv_2mortal(SvFromTclObj(aTHX_ objv[1])),
+	    G_EVAL|G_SCALAR);
+    SPAGAIN;
+
+    if (SvTRUE(ERRSV)) {
+	Tcl_SetResult(interp, SvPV_nolen(ERRSV), TCL_VOLATILE);
+	POPs; /* pop the undef off the stack */
+	rc = TCL_ERROR;
+    }
+    else {
+	if (count != 1) {
+	    croak("Perl sub bound to Tcl proc returned %d args, expected 1",
+		    count);
+	}
+	sv = POPs; /* pop the undef off the stack */
+
+	if (SvOK(sv)) {
+	    Tcl_Obj *objPtr = TclObjFromSv(aTHX_ sv);
+	    /* Tcl_SetObjResult will incr refcount */
+	    Tcl_SetObjResult(interp, objPtr);
+	}
+	rc = TCL_OK;
+    }
+
+    PUTBACK;
+    /*
+     * If the routine returned undef, it indicates that it has done the
+     * SetResult itself and that we should return TCL_ERROR
+     */
+
+    FREETMPS;
+    LEAVE;
+    return rc;
+}
+
 int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
 	int objc, Tcl_Obj *CONST objv[])
 {
@@ -234,6 +291,11 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
 
     PUSHMARK(sp);
     EXTEND(sp, objc + 2);
+    /*
+     * Place clientData and original interp on the stack, then the
+     * Tcl object invoke list, including the command name.  Users
+     * who only want the args from Tcl can splice off the first 3 args
+     */
     PUSHs(sv_mortalcopy(*av_fetch(av, 1, FALSE)));
     PUSHs(sv_mortalcopy(*av_fetch(av, 2, FALSE)));
     while (objc--) {
@@ -679,6 +741,8 @@ Tcl_Init(interp)
 	if (Tcl_Init(interp) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
+	Tcl_CreateObjCommand(interp, "::perl::Eval", Tcl_EvalInPerl,
+		(ClientData) NULL, NULL);
 
 void
 Tcl_CreateCommand(interp,cmdName,cmdProc,clientData=&PL_sv_undef,deleteProc=Nullsv)
