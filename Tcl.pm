@@ -300,7 +300,7 @@ sub LINK_BOOLEAN ()	{ 3 }
 sub LINK_STRING ()	{ 4 }
 sub LINK_READ_ONLY ()	{ 0x80 }
 
-bootstrap Tcl;
+Tcl->bootstrap($Tcl::VERSION);
 
 #TODO make better wording here
 # %anon_refs keeps track of anonymous subroutines that were created with
