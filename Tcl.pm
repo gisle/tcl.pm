@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.81';
+$Tcl::VERSION = '0.84';
 $Tcl::STACK_TRACE = 1;
 
 =head1 NAME
@@ -376,6 +376,25 @@ sub call {
 		$interp->create_tcl_sub(sub {
 		    splice @_, 0, 3; # remove ClientData, Interp and CmdName
 		    $arg->[0]->(@_, @$arg[1..$#$arg]);
+		}, $events);
+	}
+	elsif ($ref eq 'ARRAY' && ref($arg->[0]) =~ /^Tcl::Tk::Widget\b/) {
+	    # We have been passed [$Tcl_Tk_widget, 'method name', ...]
+	    # Create a proc in Tcl that invokes said method with args
+	    my $events;
+	    # Look for Tcl::Ev objects as the first arg - these must be
+	    # passed through for Tcl to evaluate.  Used primarily for %-subs
+	    # This could check for any arg ref being Tcl::Ev obj, but it
+	    # currently doesn't.
+	    if ($#$arg >= 1 && ref($arg->[1]) eq 'Tcl::Ev') {
+		$events = splice(@$arg, 1, 1);
+	    }
+	    my $wid = $arg->[0];
+	    my $method_name = $arg->[1];
+	    $args[$argcnt] =
+		$interp->create_tcl_sub(sub {
+		    splice @_, 0, 3; # remove ClientData, Interp and CmdName
+		    $wid->$method_name(@$arg[2..$#$arg]);
 		}, $events);
 	}
 	elsif (ref($arg) eq 'REF' and ref($$arg) eq 'SCALAR') {
