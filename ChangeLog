@@ -1,3 +1,23 @@
+2004-04-09  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (SvFromTclObj): if objPtr == NULL, return &PL_sv_undef.
+	(TclObjFromSv): Add SvGMAGICAL check and check that RV is not an
+	object.  Remove one impotent cycle check and add empty array elem
+	check.  Remove impotent SvUOK check.  Always return Tcl_Obj with
+	refcount 1.
+	(Tcl_PerlCallWrapper): Tcl_Obj-ify input and result.
+	(Tcl_icall): rewrite from scratch to allow for recursive calls,
+	which can occur via commands or tied vars.
+	(Tcl_icall #2): added alternate implementation (not default) that
+	calls Tcl_EvalObjv instead of direct command invocation.
+	(Tcl_Init): pass NULL (not ".") to Tcl_FindExecutable.  Create
+	Tcl_PerlCallWrapper as a Tcl_Obj command.
+	(Tcl_SetResult): use SVs/Tcl_Objs
+	(Tcl_GetVar, Tcl_GetVar2): return SV instead of char *
+	(Tcl_UnsetVar): call Tcl_UnsetVar2
+	(FETCH): return SV
+	(STORE): call Tcl_SetVar2Ex always, use SVs
+
 2004-04-07  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (TclObjFromSv): updated to correctly descend into ARRAY
