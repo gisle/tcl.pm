@@ -470,5 +470,33 @@ sub DESTROY {
     delete $anon_refs{$ref->[1]};
 }
 
+# This is the perl equiv to the C version, for reference
+#
+#sub STORE {
+#    my $obj = shift;
+#    Carp::croak "STORE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)"
+#	unless @{$obj} == 2 || @{$obj} == 3;
+#    my ($interp, $varname, $flags) = @{$obj};
+#    my ($str1, $str2) = @_;
+#    if ($str2) {
+#	$interp->SetVar2($varname, $str1, $str2, $flags);
+#    } else {
+#	$interp->SetVar($varname, $str1, $flags || 0);
+#    }
+#}
+#
+#sub FETCH {
+#    my $obj = shift;
+#    Carp::croak "FETCH Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)"
+#	unless @{$obj} == 2 || @{$obj} == 3;
+#    my ($interp, $varname, $flags) = @{$obj};
+#    my $key = shift;
+#    if ($key) {
+#	return $interp->GetVar2($varname, $key, $flags || 0);
+#    } else {
+#	return $interp->GetVar($varname, $flags || 0);
+#    }
+#}
+
 1;
 __END__
