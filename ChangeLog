@@ -1,3 +1,9 @@
+2004-05-03  Vadim Konovalov <vkonovalov@peterstar.ru>
+
+	* Tcl.pm (icall): return of \\'xy' convenience
+	
+	* Changes: brief summary for version 0.80
+
 2004-04-30  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (TclObjFromSv): pass strings to Tcl in a strictly correct
