@@ -164,7 +164,7 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
 	PUSHs(sv_2mortal(newSVpv(*argv++, 0)));
     }
     PUTBACK;
-    count = perl_call_sv(*av_fetch(av, 0, FALSE), G_SCALAR);
+    count = perl_call_sv(*av_fetch(av, 0, FALSE), G_EVAL|G_SCALAR);
     SPAGAIN;
 
     if (SvTRUE(ERRSV)) {
