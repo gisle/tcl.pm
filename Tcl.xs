@@ -97,17 +97,34 @@ TclObjFromSv(SV *sv)
 {
     Tcl_Obj *objPtr = NULL;
 
-    if (SvROK(sv) && SvTYPE(sv) == SVt_PVAV) {
+    if (SvROK(sv) && (SvTYPE(SvRV(sv)) == SVt_PVAV)) {
+	/* XXX: Should we add '&& !SvOBJECT(SvRV(sv))' above? */
+	/*
+	 * Recurse into ARRAYs, turning them into Tcl list Objs
+	 */
+	SV **svp;
 	AV *av    = (AV *) SvRV(sv);
 	I32 avlen = av_len(av);
 	int i;
 
+	if ((AV *) sv == av) {
+	    /* XXX Is this a proper check for cyclical reference? */
+	    croak("cyclical array reference found");
+	    abort();
+	}
+
 	objPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 
-	if (avlen == -1) { avlen = 0; }
-	for (i = 0; i < avlen; i++) {
-	    sv = sv_mortalcopy(*av_fetch(av, i, FALSE));
-	    Tcl_ListObjAppendElement(NULL, objPtr, TclObjFromSv(sv));
+	for (i = 0; i <= avlen; i++) {
+	    /* XXX: Should check for cyclical references */
+	    svp = av_fetch(av, i, FALSE);
+	    if ((AV *) SvRV(*svp) == av) {
+		/* XXX Is this a proper check for cyclical reference? */
+		croak("cyclical array reference found");
+		abort();
+	    }
+	    Tcl_ListObjAppendElement(NULL, objPtr,
+		    TclObjFromSv(sv_mortalcopy(*svp)));
 	}
     }
     else if (SvPOK(sv)) {
@@ -118,15 +135,16 @@ TclObjFromSv(SV *sv)
     else if (SvNOK(sv)) {
 	objPtr = Tcl_NewDoubleObj(SvNV(sv));
     }
-    else if (SvUOK(sv)) {
-	objPtr = Tcl_NewIntObj((int)SvUV(sv));
-    }
     else if (SvIOK(sv)) {
 	objPtr = Tcl_NewIntObj(SvIV(sv));
+    }
+    else if (SvUOK(sv)) {
+	objPtr = Tcl_NewIntObj((int)SvUV(sv));
     }
     else {
 	/*
 	 * Catch-all
+	 * XXX: Should we recurse other REFs, or better to stringify them?
 	 */
 	STRLEN length;
 	char *str = SvPV(sv, length);
@@ -404,7 +422,7 @@ Tcl_icall(interp, proc, ...)
 
 	Tcl_ResetResult(interp);
 
-        if (cmdinfo.objProc) {
+        if (cmdinfo.objProc && cmdinfo.isNativeObjectProc) {
             /*
 	     * We might want to check that this isn't TclInvokeStringCommand,
 	     * which just means we waste time making Tcl_Obj's.
@@ -415,15 +433,10 @@ Tcl_icall(interp, proc, ...)
 	    objv[0] = Tcl_NewStringObj(argv[0], length);
             for (i = 1;  i < argc;  i++) {
 		proc = sv_mortalcopy(*++SP);
-#if 1
 		/*
 		 * Use efficient Sv to Tcl_Obj conversion
 		 */
         	objv[i] = TclObjFromSv(proc);
-#else
-        	str = SvPV(proc, length);
-        	objv[i] = Tcl_NewStringObj(str,length);
-#endif
         	Tcl_IncrRefCount(objv[i]);
             }
 	    SP -= items;
@@ -436,11 +449,9 @@ Tcl_icall(interp, proc, ...)
 		    argc, objv);
 
 	    /*
-	     * Decrement the ref counts for the argument objects created above
+	     * Decrement ref count for first arg, others decr'd below
 	     */
-            for (i = 0;  i < argc;  i++) {
-        	Tcl_DecrRefCount(objv[i]);
-	    }
+	    Tcl_DecrRefCount(objv[0]);
         }
         else {
 	    /* 
@@ -452,9 +463,13 @@ Tcl_icall(interp, proc, ...)
 		/*
 		 * Use proc as a spare SV* variable: macro SvPV evaluates
 		 * its arguments more than once.
+		 * We need the inefficient round-trip through Tcl_Obj to
+		 * ensure that we are listify-ing correctly.
 		 */
 		proc = sv_mortalcopy(*++SP);
-		argv[i] = SvPV_nolen(proc);
+        	objv[i] = TclObjFromSv(proc);
+        	Tcl_IncrRefCount(objv[i]);
+		argv[i] = Tcl_GetString(objv[i]);
 	    }
 	    SP -= items;
 	    PUTBACK;
@@ -463,6 +478,14 @@ Tcl_icall(interp, proc, ...)
 	     */
             result = (*cmdinfo.proc)(cmdinfo.clientData, interp, argc, argv);
         }
+
+	/*
+	 * Decrement the ref counts for the argument objects created above
+	 */
+	for (i = 1;  i < argc;  i++) {
+	    Tcl_DecrRefCount(objv[i]);
+	}
+
         if (result != TCL_OK) {
        	    croak(Tcl_GetStringResult(interp));
 	}

@@ -310,6 +310,24 @@ bootstrap Tcl;
 
 my %anon_refs;
 
+sub listify {
+    my $res;
+    for my $arg (@_) {
+	my $ref = ref($arg);
+	$res .= " " if $res;
+	if (!$ref && $arg =~ / /) {
+	    $res .= "{$arg}";
+	}
+	elsif ($ref eq "ARRAY") {
+	    $res .= "{" . listify(@$arg) . "}";
+	}
+	else {
+	    $res .= $arg;
+	}
+    }
+    $res;
+}
+
 # subroutine "call" checks for its parameters, adopts them and calls "icall"
 # method which implemented in Tcl.xs file and does essential work
 sub call {
@@ -364,18 +382,12 @@ sub call {
 		$args[$argcnt] =
 		    $interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
 	    }
-#	    elsif (!ref($arg->[0])) {
 	    else {
-		# should properly turn ARRAY into Tcl list
-		$args[$argcnt] = join(' ', @$arg);
+		# Do nothing here, as icall recurses into ARRAYs and
+		# turns them into true Tcl lists
+		# Should properly turn ARRAY into Tcl list
+		#$args[$argcnt] = listify(@$arg);
 	    }
-#	    elsif (!ref($arg->[0])) {
-#		no strict "refs";
-#		$args[$argcnt] = $interp->create_tcl_sub(sub {&{"$arg->[0]"}(@$arg[1..$#$arg])});
-#	    }
-#	    else {
-#		die "WTF am I doing here?";
-#	    }
 	}
     }
     my (@res,$res);
@@ -399,8 +411,8 @@ my %Ev_helper;
 sub create_tcl_sub {
     my ($interp,$sub,$events,$tclname) = @_;
     unless ($tclname) {
-	$tclname = "$sub"; # stringify subroutine ...
-	$tclname =~ s/\W/_/g;
+	$tclname = "$sub"; # stringify sub, becomes "CODE(0x######)"
+	#$tclname =~ s/\W/_/g;
     }
     unless (exists $anon_refs{$tclname}) {
 	$anon_refs{$tclname}++;

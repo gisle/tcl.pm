@@ -1,5 +1,17 @@
 2004-04-07  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* Tcl.xs (TclObjFromSv): updated to correctly descend into ARRAY
+	refs and add possible ref cycle checking.
+	Move SvUOK check below SvIOK check.
+	(Tcl_icall): also check cmdinfo.isNativeObjectProc before using,
+	although we might want to use this when non-native since the
+	string version must use Tcl_Obj routines now for correctness.
+	The string version also calls TclObjFromSv to properly handle
+	ARRAY to list conversion.
+	* Tcl.pm (call): let icall do the ARRAY to Tcl_Obj list conversion
+	(create_tcl_sub): don't s/\W/_/g $tclname, Tcl doesn't care.
+	(listify): add routine that does rough listification of Perl sv.
+
 	* Tcl.xs (Tcl_PerlCallWrapper): handle the perl sub error case
 	where an error occurs calling perl sub from Tcl callback.
 	(Tcl_Init): move init of Tcl_Obj typePtrs
