@@ -1,3 +1,30 @@
+2004-04-15  Gisle Aas  <gisle@ActiveState.com>
+
+	* Tcl.xs: Added BOOT: section and moved initializations there.
+	* Tcl.xs, Tcl.pm, t/constants.t: Avoid hardcoded constants.  Let
+	tcl.h provide the values.  The old constants actually got the
+	values for TCL_APPEND_VALUE and TCL_LIST_ELEMENT wrong from what I
+	observe in the 8.4 tcl.h.
+	* Tcl.xs: Got rid of the Tcl_DESTROY and Tcl_result macros.  More
+	obvious what's going on with explict CODE sections instead of
+	global macros.
+	* Tcl.xs, t/info.t: Make 'info nameofexecutable' work.
+	* Tcl.xs: Use boolSV() instead of int to represent bools. A user
+	visible difference is that false is now "" instead of 0, but
+	that's the official perl way.
+	* Tcl.xs: The !SvOBJECT() test is just fine.  Remove XXX comment.
+	* Tcl.pm: Improved argument check in Tcl::Ev.
+	* Tcl.pm: Enable XS version check during bootstrap.
+	* Makefile.PL: Integrate ceMakefile.PL
+	* Makefile.PL: Cleanup.  Use Getopt::Long instead of handcoded
+	option parsing
+	* Tcl.xs, Tcl.pm: Whitespace cleanup.  Remove trailing space.
+
+2004-04-14  Gisle Aas  <gisle@ActiveState.com>
+
+	* Tcl.xs (has_highbit): renamed 'l' as 'len'. 'l' is not a good
+	variable name as it looks quite a lot like '1' in many fonts
+
 2004-04-14  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (SvFromTclObj): turn on Tcl_ListObj to AV conversion.
