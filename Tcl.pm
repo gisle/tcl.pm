@@ -298,11 +298,7 @@ sub call {
     for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
 	my $arg = $args[$argcnt];
 	my $ref = ref($arg);
-	#next unless $ref;
-	unless ($ref) {
-	    $args[$argcnt] = "$args[$argcnt]"; # stringifying will prevent from 1 => 1.0 TODO : FIXME
-	    next;
-	}
+	next unless $ref;
 	if ($ref eq 'CODE') {
 	    # We have been passed something like \&subroutine
 	    # Create a proc in Tcl that invokes this subroutine (no args)

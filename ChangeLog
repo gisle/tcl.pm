@@ -1,3 +1,8 @@
+2004-04-21  Gisle Aas  <gisle@ActiveState.com>
+
+	* Tcl.pm (call): undo hack to prevent 1=>1.0 (for r1.17).  Should
+	not be needed after Jeff's r1.23 change to Tcl.xs.
+
 2004-04-20  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (TclObjFromSv): check for IV == NV in SvNOK to account
