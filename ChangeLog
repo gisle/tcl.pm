@@ -1,3 +1,7 @@
+2005-02-02  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* Changes: prepare for CPAN release
+
 2005-01-30  Vadim Konovalov <vadimk@vkonovalov.ru>
 
 	* Tcl.pm: automatic cleanup on widget deletion
