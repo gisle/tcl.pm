@@ -7,6 +7,11 @@
  */
 #define USE_NON_CONST
 
+/*
+ * Both Perl and Tcl use this macro
+ */
+#undef STRINGIFY
+
 #include <tcl.h>
 
 #define Tcl_new(class) Tcl_CreateInterp()
@@ -235,8 +240,8 @@ Tcl_icall(interp, proc, ...)
 	Tcl		interp
 	SV *		proc
 	Tcl_CmdInfo	cmdinfo = NO_INIT
-	Tcl_CmdInfo *   pcmd = NO_INIT
-        static int	i, result, proclen, length = NO_INIT
+        static int	i, result = NO_INIT
+        static STRLEN	proclen, length = NO_INIT
 	static int	argc = NO_INIT
 	static Tcl_Obj **   objv = NO_INIT
 	static char **	argv = NO_INIT
@@ -521,14 +526,14 @@ Tcl_perl_attach(interp, name)
 	    TCL_TRACE_READS | TCL_TRACE_WRITES | TCL_TRACE_UNSETS |
 	    TCL_TRACE_ARRAY,
 	    &var_trace,
-	    1 /* clientData*/
+	    NULL /* clientData*/
 	    ) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
 	if (Tcl_TraceVar(interp, name,
 	    TCL_TRACE_READS | TCL_TRACE_WRITES | TCL_TRACE_UNSETS,
 	    &var_trace,
-	    2 /* clientData*/
+	    NULL /* clientData*/
 	    ) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
@@ -544,7 +549,7 @@ Tcl_perl_detach(interp, name)
         Tcl_UntraceVar2(interp, name, 0,
 	    TCL_TRACE_READS|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
 	    &var_trace,
-	    0 /* clientData*/
+	    NULL /* clientData*/
 	    );
         SPAGAIN;
 
