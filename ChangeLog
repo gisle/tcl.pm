@@ -1,3 +1,10 @@
+2004-04-13  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (SvFromTclObj): set newSV* to sv, then return that var.
+	(Tcl_new): changed it to force Tcl_FindExecutable call before
+	first Tcl_CreateInterp and cache data types on first new.
+	(Tcl_Init): moved Tcl_FindExecutable call to Tcl_new.
+
 2004-04-12  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs: #define PERL_NO_GET_CONTEXT and pass perl context

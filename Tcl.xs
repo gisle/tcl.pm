@@ -31,7 +31,6 @@
 
 #include <tcl.h>
 
-#define Tcl_new(class) Tcl_CreateInterp()
 #define Tcl_result(interp) Tcl_GetStringResult(interp)
 #define Tcl_DESTROY(interp) Tcl_DeleteInterp(interp)
 
@@ -91,16 +90,16 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 
     if (objPtr == NULL) {
 	/* or return newSV(0); ?? */
-	return &PL_sv_undef;
+	sv = &PL_sv_undef;
     }
     if (objPtr->typePtr == tclIntTypePtr) {
-	return newSViv(objPtr->internalRep.longValue);
+	sv = newSViv(objPtr->internalRep.longValue);
     }
     else if (objPtr->typePtr == tclDoubleTypePtr) {
-	return newSVnv(objPtr->internalRep.doubleValue);
+	sv = newSVnv(objPtr->internalRep.doubleValue);
     }
     else if (objPtr->typePtr == tclBooleanTypePtr) {
-	return newSViv((objPtr->internalRep.longValue != 0));
+	sv = newSViv((objPtr->internalRep.longValue != 0));
     }
     else if (objPtr->typePtr == tclByteArrayTypePtr) {
 	str = Tcl_GetByteArrayFromObj(objPtr, &len);
@@ -362,6 +361,27 @@ MODULE = Tcl	PACKAGE = Tcl	PREFIX = Tcl_
 Tcl
 Tcl_new(class = "Tcl")
 	char *	class
+    CODE:
+    	if (!findexecutable_called) {
+	    /*
+	     * XXX TODO (?) place here $^X ?
+	     * Ideally this would be passed the dll instance location.
+	     */
+	    Tcl_FindExecutable(NULL);
+	    findexecutable_called = 1;
+	}
+	RETVAL = Tcl_CreateInterp();
+	if (tclBooleanTypePtr == NULL) {
+	    tclBooleanTypePtr   = Tcl_GetObjType("boolean");
+	    tclByteArrayTypePtr = Tcl_GetObjType("bytearray");
+	    tclDoubleTypePtr    = Tcl_GetObjType("double");
+	    tclIntTypePtr       = Tcl_GetObjType("int");
+	    tclListTypePtr      = Tcl_GetObjType("list");
+	    tclStringTypePtr    = Tcl_GetObjType("string");
+	    tclWideIntTypePtr   = Tcl_GetObjType("wideInt");
+	}
+    OUTPUT:
+	RETVAL
 
 char *
 Tcl_result(interp)
@@ -660,21 +680,8 @@ void
 Tcl_Init(interp)
 	Tcl	interp
     CODE:
-    	if (!findexecutable_called) {
-	    Tcl_FindExecutable(NULL); /* TODO (?) place here $^X ? */
-	}
 	if (Tcl_Init(interp) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
-	}
-
-	if (tclBooleanTypePtr == NULL) {
-	    tclBooleanTypePtr   = Tcl_GetObjType("boolean");
-	    tclByteArrayTypePtr = Tcl_GetObjType("bytearray");
-	    tclDoubleTypePtr    = Tcl_GetObjType("double");
-	    tclIntTypePtr       = Tcl_GetObjType("int");
-	    tclListTypePtr      = Tcl_GetObjType("list");
-	    tclStringTypePtr    = Tcl_GetObjType("string");
-	    tclWideIntTypePtr   = Tcl_GetObjType("wideInt");
 	}
 
 void
