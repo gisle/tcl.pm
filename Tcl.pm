@@ -272,11 +272,8 @@ See http://www.perl.com/perl/misc/Artistic.html
 
 use strict;
 use DynaLoader;
-unless (defined $Tcl::Tk::VERSION) {
-    package Tcl::Tk; # define empty package
-}
 use vars qw(@ISA);
-@ISA = qw(DynaLoader Tcl::Tk);
+@ISA = qw(DynaLoader);
 
 Tcl->bootstrap($Tcl::VERSION);
 
