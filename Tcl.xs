@@ -209,10 +209,11 @@ TclObjFromSv(pTHX_ SV *sv)
 	double dval = SvNV(sv);
 	int ival;
 	/*
-	 * Account for some perl versions aggressive NOK-ness where
-	 * an int was all that was intented.
+	 * Perl does math with doubles by default, so 0 + 1 == 1.0.
+	 * Check for int-equiv doubles and make those ints.
+	 * XXX This check possibly only necessary for <=5.6.x
 	 */
-	if (SvIOK(sv) && ((double)(ival = SvIV(sv)) == dval)) {
+	if (((double)(ival = SvIV(sv)) == dval)) {
 	    objPtr = Tcl_NewIntObj(ival);
 	} else {
 	    objPtr = Tcl_NewDoubleObj(dval);
@@ -767,6 +768,15 @@ Tcl_Init(interp)
 	Tcl_CreateObjCommand(interp, "::perl::Eval", Tcl_EvalInPerl,
 		(ClientData) NULL, NULL);
 
+int
+Tcl_DoOneEvent(interp, flags)
+	Tcl	interp
+	int	flags
+    CODE:
+	RETVAL = Tcl_DoOneEvent(flags);
+    OUTPUT:
+	RETVAL
+
 void
 Tcl_CreateCommand(interp,cmdName,cmdProc,clientData=&PL_sv_undef,deleteProc=Nullsv)
 	Tcl	interp
@@ -1079,4 +1089,11 @@ BOOT:
 	newCONSTSUB(stash, "LINK_BOOLEAN",     newSViv(TCL_LINK_BOOLEAN));
 	newCONSTSUB(stash, "LINK_STRING",      newSViv(TCL_LINK_STRING));
 	newCONSTSUB(stash, "LINK_READ_ONLY",   newSViv(TCL_LINK_READ_ONLY));
+
+	newCONSTSUB(stash, "WINDOW_EVENTS",    newSViv(TCL_WINDOW_EVENTS));
+	newCONSTSUB(stash, "FILE_EVENTS",      newSViv(TCL_FILE_EVENTS));
+	newCONSTSUB(stash, "TIMER_EVENTS",     newSViv(TCL_TIMER_EVENTS));
+	newCONSTSUB(stash, "IDLE_EVENTS",      newSViv(TCL_IDLE_EVENTS));
+	newCONSTSUB(stash, "ALL_EVENTS",       newSViv(TCL_ALL_EVENTS));
+	newCONSTSUB(stash, "DONT_WAIT",        newSViv(TCL_DONT_WAIT));
     }

@@ -1,3 +1,11 @@
+2004-04-29  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (Tcl_DoOneEvent): expose Tcl::DoOneEvent for perl and add
+	TCL_*_EVENTS and TCL_DONT_WAIT constants to BOOT block.
+	(TclObjFromSv): remove SvIOK check in SvNOK block to force the
+	int-equiv double check.  By default, perl does math with doubles,
+	so we need to force this check.  Possibly not necessary for 5.8+.
+
 2004-04-27  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (Tcl_SetVar, Tcl_SetVar2): make SV/Tcl_Obj aware.
