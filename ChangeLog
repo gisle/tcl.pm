@@ -1,3 +1,9 @@
+2004-04-16  Gisle Aas  <gisle@ActiveState.com>
+
+	* Tcl.xs: Make it possible to subclass Tcl.
+	* Tcl.pm: Don't subclass Tcl::Tk any more.  Tcl::Tcl will subclass
+	Tcl instead.
+	
 2004-04-15  Gisle Aas  <gisle@ActiveState.com>
 
 	* Tcl.xs: Added BOOT: section and moved initializations there.

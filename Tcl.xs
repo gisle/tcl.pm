@@ -354,11 +354,12 @@ var_trace(ClientData clientData, Tcl_Interp *interp,
 
 MODULE = Tcl	PACKAGE = Tcl	PREFIX = Tcl_
 
-Tcl
+SV *
 Tcl_new(class = "Tcl")
 	char *	class
     CODE:
-	RETVAL = Tcl_CreateInterp();
+	RETVAL = newSV(0);
+	sv_setref_pv(RETVAL, class, (void*)Tcl_CreateInterp());
     OUTPUT:
 	RETVAL
 
@@ -871,7 +872,7 @@ FETCH(av, key = NULL)
 	    croak("bad object passed to Tcl::Var::FETCH");
 	}
 	sv = *av_fetch(av, 0, FALSE);
-	if (sv_isa(sv, "Tcl")) {
+	if (sv_derived_from(sv, "Tcl")) {
 	    IV tmp = SvIV((SV *) SvRV(sv));
 	    interp = (Tcl) tmp;
 	}
@@ -904,7 +905,7 @@ STORE(av, sv1, sv2 = NULL)
 	if (AvFILL(av) != 1 && AvFILL(av) != 2)
 	    croak("bad object passed to Tcl::Var::STORE");
 	sv = *av_fetch(av, 0, FALSE);
-	if (sv_isa(sv, "Tcl")) {
+	if (sv_derived_from(sv, "Tcl")) {
 	    IV tmp = SvIV((SV *) SvRV(sv));
 	    interp = (Tcl) tmp;
 	}
