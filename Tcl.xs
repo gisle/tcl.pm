@@ -880,16 +880,14 @@ Tcl_EvalFileHandle(interp, handle)
 	prepare_Tcl_result(aTHX_ interp, "Tcl::EvalFileHandle");
 	SPAGAIN;
 
-#if 1
-
 void
-Tcl_icall(interp, sv, ...)
+Tcl_invoke(interp, sv, ...)
 	Tcl		interp
 	SV *		sv
     PPCODE:
 	{
 	    /*
-	     * This icall invokes the command directly, avoiding
+	     * 'Tcl::invoke' invokes the command directly, avoiding
 	     * command tracing and the ::unknown mechanism.
 	     */
 #define NUM_OBJS 16
@@ -1009,7 +1007,7 @@ Tcl_icall(interp, sv, ...)
 	    if (result != TCL_OK) {
 		croak(Tcl_GetStringResult(interp));
 	    }
-	    prepare_Tcl_result(aTHX_ interp, "Tcl::call");
+	    prepare_Tcl_result(aTHX_ interp, "Tcl::invoke");
 
 	    if (objv != baseobjv) {
 		Safefree(objv);
@@ -1018,7 +1016,6 @@ Tcl_icall(interp, sv, ...)
 #undef NUM_OBJS
 	}
 
-#else
 
 void
 Tcl_icall(interp, sv, ...)
@@ -1027,7 +1024,7 @@ Tcl_icall(interp, sv, ...)
     PPCODE:
 	{
 	    /*
-	     * This icall passes the args to Tcl to invoke.  It will do
+	     * 'Tcl::icall' passes the args to Tcl to invoke.  It will do
 	     * command tracing and call ::unknown mechanism for unrecognized
 	     * commands.
 	     */
@@ -1077,7 +1074,7 @@ Tcl_icall(interp, sv, ...)
 	    if (result != TCL_OK) {
 		croak(Tcl_GetStringResult(interp));
 	    }
-	    prepare_Tcl_result(aTHX_ interp, "Tcl::call");
+	    prepare_Tcl_result(aTHX_ interp, "Tcl::icall");
 
 	    if (objv != baseobjv) {
 		Safefree(objv);
@@ -1086,7 +1083,6 @@ Tcl_icall(interp, sv, ...)
 #undef NUM_OBJS
 	}
 
-#endif
 
 void
 Tcl_DESTROY(interp)

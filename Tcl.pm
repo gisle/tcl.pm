@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.80';
+$Tcl::VERSION = '0.81';
 
 =head1 NAME
 
@@ -93,10 +93,11 @@ on a Tcl script following an __END__ token.
 
 =item call (PROC, ARG, ...)
 
-Looks up procedure PROC in the interpreter and invokes it directly with
-arguments (ARG, ...) without passing through the Tcl parser. For example,
-spaces embedded in any ARG will not cause it to be split into two Tcl
-arguments before being passed to PROC.
+Looks up procedure PROC in the interpreter and invokes it using Tcl's eval
+semantics that does command tracing and will use the ::unknown (AUTOLOAD)
+mechanism.  The arguments (ARG, ...) are not passed through the Tcl parser.
+For example, spaces embedded in any ARG will not cause it to be split into
+two Tcl arguments before being passed to PROC.
 
 Before invoking procedure PROC special processing is performed on ARG list:
 
@@ -123,7 +124,35 @@ the first argument to the subroutine.  Example:
       my ($x,$y,$w) = @_;
       widget($w)->insert("\@$x,$y", $interp->Eval('selection get'));
   }
-  $widget->bind('<2>', [\&textPaste, Tcl::Ev('%x', '%y'), $c] );
+  $widget->bind('<2>', [\&textPaste, Tcl::Ev('%x', '%y'), $widget] );
+
+=item icall (PROC, ARG, ...)
+
+Looks up procedure PROC in the interpreter and invokes it using Tcl's eval
+semantics that does command tracing and will use the ::unknown (AUTOLOAD)
+mechanism.  The arguments (ARG, ...) are not passed through the Tcl parser.
+For example, spaces embedded in any ARG will not cause it to be split into
+two Tcl arguments before being passed to PROC.
+
+This is the lower-level procedure that the 'call' method uses.  Arguments
+are converted efficiently from Perl SVs to Tcl_Objs.  A Perl AV array
+becomes a Tcl_ListObj, an SvIV becomes a Tcl_IntObj, etc.  The reverse
+conversion is done to the result.
+
+=item invoke (PROC, ARG, ...)
+
+Looks up procedure PROC in the interpreter and invokes it directly with
+arguments (ARG, ...) without passing through the Tcl parser. For example,
+spaces embedded in any ARG will not cause it to be split into two Tcl
+arguments before being passed to PROC.  This differs from icall/call in
+that it directly invokes the command name without allowing for command
+tracing or making use of Tcl's unknown (AUTOLOAD) mechanism.  If the
+command does not already exist in the interpreter, and error will be
+thrown.
+
+Arguments are converted efficiently from Perl SVs to Tcl_Objs.  A Perl AV
+array becomes a Tcl_ListObj, an SvIV becomes a Tcl_IntObj, etc.  The
+reverse conversion is done to the result.
 
 =item Tcl::Ev (FIELD, ...)
 

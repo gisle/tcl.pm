@@ -1,6 +1,16 @@
+2004-05-04  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.pm: bump to 0.81 and add commands for icall and invoke.
+	* Tcl.xs: change Tcl::icall to Tcl::invoke and make alternate
+	Tcl::icall the default one.  Tcl::icall will now have command
+	tracing and use Tcl's unknown mechanism, whereas Tcl::invoke does
+	the direct command invocation (where it is an error if the command
+	does not already exist).  This is the better default as Tcl uses
+	unknown for autoload in many cases.
+
 2004-05-03  Vadim Konovalov <vkonovalov@peterstar.ru>
 
-	* Tcl.pm (icall): return of \\'xy' convenience
+	* Tcl.pm (call): return of \\'xy' convenience
 	
 	* Changes: brief summary for version 0.80
 
