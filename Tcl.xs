@@ -109,7 +109,6 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 	str = Tcl_GetByteArrayFromObj(objPtr, &len);
 	sv = newSVpvn(str, len);
     }
-#if 0
     else if (objPtr->typePtr == tclListTypePtr) {
 	/*
 	 * tclListTypePtr should become an AV.
@@ -126,10 +125,8 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 	for (i = 0; i < objc; i++) {
 	    av_push(av, SvFromTclObj(aTHX_ objv[i]));
 	}
-	//sv = (SV *) av;
 	sv = newRV_noinc((SV *) av);
     }
-#endif
     /* tclStringTypePtr is true unicode */
     /* tclWideIntTypePtr is 64-bit int */
     else {

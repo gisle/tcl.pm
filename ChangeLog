@@ -1,5 +1,15 @@
 2004-04-14  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* Tcl.xs (SvFromTclObj): turn on Tcl_ListObj to AV conversion.
+	* Tcl.pm (call): rework with much clearer comments on what is
+	going on.  Don't bother doing map of undefined vals to "", icall
+	does that for us.  Cache arg ref for use in the if/elsifs.
+	Remove commented out listify and listify sub - icall properly
+	handles the AV to Tcl_ListObj conversions.
+	Correct result handling by matching expectations with icall.  If
+	we are called in ARRAY context, invoke icall in array context,
+	otherwise invoke icall in scalar context.
+
 	* t/call.t (new): some tests for call and icall functions
 
 2004-04-13  Jeff Hobbs  <jeffh@ActiveState.com>

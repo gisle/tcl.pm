@@ -302,28 +302,6 @@ sub LINK_READ_ONLY ()	{ 0x80 }
 
 bootstrap Tcl;
 
-# This is a crude list-creating routine.  'icall' convert perl array
-# refs into Tcl list objects efficiently, so this isn't necessary.
-# It is also not "comprehensive", so should be used as a last resort.
-sub listify {
-    my $res;
-    for my $arg (@_) {
-	my $ref = ref($arg);
-	$res .= " " if $res;
-	if (!$ref && $arg =~ / /) {
-	    $res .= "{$arg}";
-	}
-	elsif ($ref eq "ARRAY") {
-	    $res .= "{" . listify(@$arg) . "}";
-	}
-	else {
-	    $arg =~ s/\\/\\\\/g;
-	    $res .= $arg;
-	}
-    }
-    return $res;
-}
-
 #TODO make better wording here
 # %anon_refs keeps track of anonymous subroutines that were created with
 # "CreateComand" method during process of transformation of arguments for
@@ -333,30 +311,33 @@ sub listify {
 
 my %anon_refs;
 
-# subroutine "call" checks for its parameters, adopts them and calls "icall"
-# method which implemented in Tcl.xs file and does essential work
+# Subroutine "call" preprocess the arguments for special cases
+# and then calls "icall" (implemented in Tcl.xs), which invokes
+# the command in Tcl.
 sub call {
-    if (0) {
-	local $"=',';
-	print STDERR "{{@_}}\n";
-    };
-    # look for CODE and ARRAY refs and substitute them with working code
-    # fragments
     my $interp = shift;
-    my @args = map{defined $_?$_:""} @_; # this could be optimized
+    my @args = @_;
+
+    # Process arguments looking for special cases
     for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
 	my $arg = $args[$argcnt];
-	next unless ref $arg;
-	if (ref($arg) eq 'CODE') {
+	my $ref = ref($arg);
+	next unless $ref;
+	if ($ref eq 'CODE') {
+	    # We have been passed something like \&subroutine
+	    # Create a proc in Tcl that invokes this subroutine (no args)
 	    $args[$argcnt] = $interp->create_tcl_sub($arg);
 	}
-	elsif (ref($arg) =~ /^Tcl::Tk::Widget\b/) {
-	    # this trick will help manipulate widgets
+	elsif ($ref =~ /^Tcl::Tk::Widget\b/) {
+	    # We have been passed a widget reference.
+	    # Convert to its Tk pathname (eg, .top1.fr1.btn2)
 	    $args[$argcnt] = $arg->path;
 	}
-	elsif (ref($arg) eq 'SCALAR') {
+	elsif ($ref eq 'SCALAR') {
+	    # We have been passed something like \$scalar
+	    # Create a tied variable between Tcl and Perl.
 	    my $nm = "$arg"; # stringify scalar ref ...
-	    $nm =~ s/\W/_/g;
+	    $nm =~ s/\W/_/g; # remove () from stringified name
 	    unless (exists $anon_refs{$nm}) {
 		$anon_refs{$nm}++;
 		my $s = $$arg;
@@ -366,9 +347,9 @@ sub call {
 	    }
 	    $args[$argcnt] = $nm; # ... and substitute its name
 	}
-	elsif (ref($arg) eq 'REF' and ref($$arg) eq 'SCALAR') {
-	    # this is a very special case: if we see construct like \\"xy"
-	    # then we must prepare TCL-events variables such as TCL
+	elsif ($ref eq 'REF' && ref($$arg) eq 'SCALAR') {
+	    # Very special case: if we see construct like \\"xy"
+	    # then we must prepare Tcl-events variables such as Tcl
 	    # variables %x, %y and so on, and next must be code reference
 	    # for subroutine that will use those variables.
 	    # TODO - implement better way, using OO and blessing into
@@ -380,30 +361,35 @@ sub call {
 	    $args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$$$arg);
 	    splice @args, $argcnt+1, 1;
 	}
-	elsif (ref($arg) eq 'ARRAY') {
-	    if (ref($arg->[0]) eq 'CODE') {
-		# This implements subroutine call with args from an array ref
-		# XXX needs testing
-		$args[$argcnt] =
-		    $interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
-	    }
-	    else {
-		# Do nothing here, as icall recurses into ARRAYs and
-		# turns them into true Tcl lists
-		# Should properly turn ARRAY into Tcl list
-		#$args[$argcnt] = listify(@$arg);
-	    }
+	elsif ($ref eq 'ARRAY' && ref($arg->[0]) eq 'CODE') {
+	    # We have been passed something like [\&subroutine, $arg1, ...]
+	    # Create a proc in Tcl that invokes this subroutine with args
+	    $args[$argcnt] =
+		$interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
 	}
     }
-    my (@res,$res);
-    eval {
-	@res = $interp->icall(@args);
-    };
-    if ($@) {
-	confess "Tcl error $@ while invoking call\n \"@args\"";
+    # Done with special var processing.  The only processing that icall
+    # will do with the args is efficient conversion of SV to Tcl_Obj.
+    # A SvIV will become a Tcl_IntObj, ARRAY refs will become Tcl_ListObjs,
+    # and so on.  The return result from icall will do the opposite,
+    # converting a Tcl_Obj to an SV.
+    if (wantarray) {
+	my @res;
+	eval { @res = $interp->icall(@args); };
+	if ($@) {
+	    confess "Tcl error '$@' while invoking array result call:\n" .
+		"\t\"@args\"";
+	}
+	return @res;
+    } else {
+	my $res;
+	eval { $res = $interp->icall(@args); };
+	if ($@) {
+	    confess "Tcl error '$@' while invoking scalar result call:\n" .
+		"\t\"@args\"";
+	}
+	return $res;
     }
-    return @res if wantarray;
-    return $res[0];
 }
 
 # create_tcl_sub will create TCL sub that will invoke perl anonymous sub
