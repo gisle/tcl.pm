@@ -1,3 +1,7 @@
+2004-04-16  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* t/info.t: return -longname of nameofexe on Windows to match $^X.
+
 2004-04-16  Gisle Aas  <gisle@ActiveState.com>
 
 	* Tcl.xs: Make it possible to subclass Tcl.

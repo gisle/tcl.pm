@@ -11,7 +11,13 @@ use Sys::Hostname qw(hostname);
 my $tcl = Tcl->new;
 
 ok($tcl);
-ok($tcl->Eval("info nameofexecutable"), $^X);
+my $nameofexe = $tcl->Eval("info nameofexecutable");
+if ($^O eq "MSWin32") {
+    # Tcl nameofexe returns the safe 8.3 version, so convert it to match $^X
+    ok($tcl->Eval("file native [file attributes $nameofexe -longname]"), $^X);
+} else {
+    ok($nameofexe, $^X);
+}
 ok($tcl->Eval("info hostname"), hostname);
 
 my $tclversion = $tcl->Eval("info tclversion");
