@@ -398,7 +398,7 @@ sub create_tcl_sub {
 }
 sub Ev {
     my $s = shift;
-    if (length($s)>1) {
+    if (!defined($s) || length($s) != 1) {
 	warn "Event variable must have length 1";
 	return;
     }
