@@ -1,7 +1,12 @@
+#!perl -w
+
 # before running this script make sure you have 'tclsh' in your path, 
 # and this 'tcl' distribution is required one.
 # FreeBSD users may want to modify name of tcl interpreter (this is
 # $tclsh variable below) as long as 'tclsh' does not work in their case
+
+use strict;
+use Getopt::Long qw(GetOptions);
 
 my $tclsh = 'tclsh';
 my $tclconfig;
@@ -9,25 +14,11 @@ my $buildspec;
 my $libpath;
 my $incpath;
 
-while (1) {
-    # Handle any --options
-    last unless @ARGV[0] =~ /^--/;
-    my $opt = shift @ARGV;
-    my $val = shift @ARGV;
-    if ($opt eq "--tclsh") {
-	$tclsh = $val;
-    }
-    elsif ($opt eq "--tclconfig") {
-	$tclconfig = $val;
-    }
-    elsif ($opt eq "--buildspec") {
-	$buildspec = 1;
-    }
-    else {
-	die "unknown option '$opt', must be --tclsh, --tclconfig or --buildspec\n";
-    }
-}
-
+GetOptions("tclsh=s", \$tclsh,
+	   "tclconfig=s", \$tclconfig,
+	   "buildspec", \$buildspec)
+    || die "Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>] " .
+                                   "[--buildspec] [<makemaker opts>...]\n";
 
 if ($tclconfig) {
     die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
