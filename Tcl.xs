@@ -71,9 +71,9 @@ check_refcounts(Tcl_Obj *objPtr) {
 #endif
 
 static int
-has_highbit(CONST char *s,int l)
+has_highbit(CONST char *s, int len)
 {
-    CONST char *e = s+l;
+    CONST char *e = s + len;
     while (s < e) {
 	if (*s++ & 0x80)
 	    return 1;
