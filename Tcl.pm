@@ -511,6 +511,49 @@ sub TIEHASH {
     bless \@objdata, $class;
 }
 
+my %arraystates;
+sub FIRSTKEY {
+    my $obj = shift;
+    die "STORE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)"
+	unless @{$obj} == 2 || @{$obj} == 3;
+    my ($interp, $varname, $flags) = @$obj;
+    $arraystates{$varname} = $interp->invoke("array","startsearch",$varname);
+    my $r = $interp->invoke("array","nextelement",$varname,$arraystates{$varname});
+    if ($r eq '') {
+	delete $arraystates{$varname};
+	return undef;
+    }
+    return $r;
+}
+sub NEXTKEY {
+    my $obj = shift;
+    die "STORE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)"
+	unless @{$obj} == 2 || @{$obj} == 3;
+    my ($interp, $varname, $flags) = @$obj;
+    my $r = $interp->invoke("array","nextelement",$varname,$arraystates{$varname});
+    if ($r eq '') {
+	delete $arraystates{$varname};
+	return undef;
+    }
+    return $r;
+}
+sub CLEAR {
+    my $obj = shift;
+    die "STORE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)"
+	unless @{$obj} == 2 || @{$obj} == 3;
+    my ($interp, $varname, $flags) = @$obj;
+    $interp->invoke("array", "unset", "$varname");
+    #$interp->invoke("array", "set", "$varname", "");
+}
+sub DELETE {
+    my $obj = shift;
+    Carp::croak "STORE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)"
+	unless @{$obj} == 2 || @{$obj} == 3;
+    my ($interp, $varname, $flags) = @{$obj};
+    my ($str1) = @_;
+    $interp->invoke("unset", "$varname($str1)"); # protect strings?
+}
+
 sub UNTIE {
     my $ref = shift;
     print STDERR "UNTIE:$ref(@_)\n"; # Why this never called?

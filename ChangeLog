@@ -1,3 +1,7 @@
+2005-01-23  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* Tcl.pm: implement method for tied hashes to Tcl::Var
+
 2004-12-30  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Changes: 
