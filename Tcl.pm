@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.77';
+$Tcl::VERSION = '0.80';
 
 =head1 NAME
 
@@ -113,26 +113,26 @@ code as:
   my $r = 'aaaa';
   button(".d", -textvariable => \$r, -command=>sub {$r++});
 
-3.  As a special case, it is supported a mechanism to deal with Tk's special
-event variables (they are mentioned as '%x', '%y' and so on throughout Tcl).
-Before suborutine reference that uses such variables there must be placed a
-reference to reference to a string that enumerates all desired fields.
-After this is done, access to event fields is performed via Tcl::Ev subroutine.
-Example:
+3.  As a special case, it is supported a mechanism to deal with Tk's
+special event variables (they are mentioned as '%x', '%y' and so on
+throughout Tcl).  When creating a subrutine reference that uses such
+variables, you must declare the desired variables using Tcl::EV as
+the first argument to the subroutine.  Example:
 
-  $widget->bind('text', '<2>', \\'xy', sub {textPaste ($c)} );
   sub textPaste {
-    my ($w,$x,$y) = (shift, Tcl::Ev('x'), Tcl::Ev('y'));
-    widget($w)->insert('text', "\@$x,$y", $interp->Eval('selection get'));
+      my ($x,$y,$w) = @_;
+      widget($w)->insert("\@$x,$y", $interp->Eval('selection get'));
   }
+  $widget->bind('<2>', [\&textPaste, Tcl::EV('%x', '%y'), $c] );
 
+=item Tcl::EV (FIELD, ...)
 
-=item Tcl::Ev (FEILD)
-
-Returns Tcl/Tk special event field designated by argument FIELD. FIELD must
-be single character. Before invoking Tcl::Ev a subroutine that will call it
-must enlist appropriate fields in argument list before appropriate code
-reference in call to Tcl. See description of 'call' method for details.
+Used to declare %-substitution variables of interest to a subroutine
+callback.  FIELD is expected to be of the form "%#" where # is a single
+character, and multiple fields may be specified.  Returns a blessed object
+that the 'call' method will recognize when it is passed as the first
+argument to a subroutine in a callback.  See description of 'call' method
+for details.
 
 =item result ()
 
@@ -312,8 +312,12 @@ sub call {
 	elsif ($ref eq 'SCALAR') {
 	    # We have been passed something like \$scalar
 	    # Create a tied variable between Tcl and Perl.
-	    my $nm = "$arg"; # stringify scalar ref ...
-	    $nm =~ s/\W/_/g; # remove () from stringified name
+
+	    # stringify scalar ref, create in ::perl namespace on Tcl side
+	    # This will be SCALAR(0xXXXXXX) - leave it to become part of a
+	    # Tcl array.
+	    my $nm = "::perl::$arg";
+	    #$nm =~ s/\W/_/g; # remove () from stringified name
 	    unless (exists $anon_refs{$nm}) {
 		$anon_refs{$nm}++;
 		my $s = $$arg;
@@ -323,25 +327,22 @@ sub call {
 	    }
 	    $args[$argcnt] = $nm; # ... and substitute its name
 	}
-	elsif ($ref eq 'REF' && ref($$arg) eq 'SCALAR') {
-	    # Very special case: if we see construct like \\"xy"
-	    # then we must prepare Tcl-events variables such as Tcl
-	    # variables %x, %y and so on, and next must be code reference
-	    # for subroutine that will use those variables.
-	    # TODO - implement better way, using OO and blessing into
-	    # special package
-	    if (ref($args[$argcnt+1]) ne 'CODE') {
-		warn "CODE reference expected after description of event fields";
-		next;
-	    }
-	    $args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$$$arg);
-	    splice @args, $argcnt+1, 1;
-	}
 	elsif ($ref eq 'ARRAY' && ref($arg->[0]) eq 'CODE') {
 	    # We have been passed something like [\&subroutine, $arg1, ...]
 	    # Create a proc in Tcl that invokes this subroutine with args
+	    my $events;
+	    # Look for Tcl::EV objects as the first arg - these must be
+	    # passed through for Tcl to evaluate.  Used primarily for %-subs
+	    # This could check for any arg ref being Tcl::EV obj, but it
+	    # currently doesn't.
+	    if ($#$arg >= 1 && ref($arg->[1]) eq 'Tcl::EV') {
+		$events = splice(@$arg, 1, 1);
+	    }
 	    $args[$argcnt] =
-		$interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
+		$interp->create_tcl_sub(sub {
+		    splice @_, 0, 3; # remove ClientData, Interp and CmdName
+		    $arg->[0]->(@_, @$arg[1..$#$arg]);
+		}, $events);
 	}
     }
     # Done with special var processing.  The only processing that icall
@@ -383,44 +384,33 @@ sub wcall {
 }
 
 # create_tcl_sub will create TCL sub that will invoke perl anonymous sub
-# if $events variable is specified then special processing will be
-# performed to provide needed '%' variables
-# if $tclname is specified then procedure will have namely that name,
-# otherwise it will have machine-readable name
-# returns tcl script suitable for using in tcl events
-my %Ev_helper;
+# If $events variable is specified then special processing will be
+# performed to provide needed '%' variables.
+# If $tclname is specified then procedure will have namely that name,
+# otherwise it will have machine-readable name.
+# Returns tcl script suitable for using in tcl events.
 sub create_tcl_sub {
     my ($interp,$sub,$events,$tclname) = @_;
     unless ($tclname) {
-	$tclname = "$sub"; # stringify sub, becomes "CODE(0x######)"
-	#$tclname =~ s/\W/_/g;
+	# stringify sub, becomes "CODE(0x######)" in ::perl namespace
+	$tclname = "::perl::$sub";
     }
     unless (exists $anon_refs{$tclname}) {
 	$anon_refs{$tclname}++;
 	$interp->CreateCommand($tclname, $sub);
     }
     if ($events) {
-	$tclname = (join '', map {"set _ptcl_ev$_ %$_;"} split '', $events) . "$tclname";
-	$tclname =~ s/_ptcl_ev(?:\#|%)/"_ptcl_ev".($1 eq '#'?'_sharp':'_perc')/eg;
-	for (split '', $events) {
-	    $Ev_helper{$_} = $interp;
-	}
+	# Add any %-substitutions to callback
+	$tclname = "$tclname " . join(' ', @{$events});
     }
-    $tclname;
+    return $tclname;
+}
+sub EV {
+    my @events = @_;
+    return bless \@events, "Tcl::EV";
 }
 sub Ev {
-    my $s = shift;
-    if (!defined($s) || length($s) != 1) {
-	warn "Event variable must have length 1";
-	return;
-    }
-    if ($s eq '%') {$s = '_perc'}
-    elsif ($s eq '#') {$s = '_sharp'}
-    return $Ev_helper{$s}->GetVar("_ptcl_ev$s");
-}
-sub ev_sub {
-    my ($interp,$events,$sub) = @_;
-    return $interp->create_tcl_sub($sub,$events);
+    die "Tcl::Ev no longer supported, use Tcl::EV in callback creation instead\n";
 }
 
 

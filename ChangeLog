@@ -1,3 +1,27 @@
+2004-04-21  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (Tcl_EvalInPerl): create ::perl::Eval proc in Tcl_Init.
+	This can be used in Tcl to eval whatever you want in Perl.
+
+	* Tcl.pm: jump to v0.80.
+	Remove Tcl::Ev, replace with Tcl::EV.  This is used in the
+	callback creation instead of in the callback sub, passing the args
+	as proper args to the sub.  Removed the previously ability to have
+	ref-ref scalars magically convert to %-subs and consume the next
+	arg as a code ref.  What used to be written:
+	     '<Motion>', \\'XY', \&mysub, ...
+	is now written:
+	     '<Motion>', [\&mysub, Tcl::EV('%X', '%Y')], ...
+	and they are pass in as true args (no Tcl::Ev calls required).
+		**** POTENTIAL INCOMPATABILITY ****
+	Arguments from Tcl passed to sub with Perl args now properly pass
+	those args to the Perl sub as well (precede Perl args).  IOW, a
+	reference to [\&mysub, "foo"] that becomes CODE(0x1234) called
+	from Tcl as "CODE(0x1234) bar" will have ("bar", "foo") in @_.
+	(call): Create tied vars in Tcl in the ::perl namespace and leave
+	the ()s, making them all elements of the Tcl array ::perl::SCALAR.
+	(create_tcl_sub): Create procs in Tcl in the ::perl namespace.
+
 2004-04-21  Gisle Aas  <gisle@ActiveState.com>
 
 	* Tcl.pm (call): undo hack to prevent 1=>1.0 (for r1.17).  Should
