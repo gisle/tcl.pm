@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.73';
+$Tcl::VERSION = '0.75';
 
 =head1 NAME
 
@@ -320,7 +320,7 @@ sub call {
     # look for CODE and ARRAY refs and substitute them with working code
     # fragments
     my $interp = shift;
-    my @args = @_; # this could be optimized
+    my @args = map{defined $_?$_:""} @_; # this could be optimized
     for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
 	my $arg = $args[$argcnt];
 	next unless ref $arg;
@@ -356,11 +356,13 @@ sub call {
 	    $args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$$$arg);
 	    splice @args, $argcnt+1, 1;
 	}
-	elsif ((ref($arg) eq 'ARRAY') and (ref($arg->[0]) eq 'CODE')) {
-	    # This implements subroutine call with args from an array ref
-	    # XXX needs testing
-	    $args[$argcnt] =
-		$interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
+	elsif (ref($arg) eq 'ARRAY') {
+	    if (ref($arg->[0]) eq 'CODE') {
+		$args[$argcnt] = $interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
+	    }
+	    else {
+		$args[$argcnt] = join ' ', @$arg;
+	    }
 	}
     }
     my (@res,$res);

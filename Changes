@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl.
 
+0.75    28-mar-2004, Vadim Konovalov
+	- ARRAY REF are processed in $interp->call(...) for perlTk compat
+	- replace undef with '' in $interp->call(...)
+
 0.72    20-aug-2003, Vadim Konovalov
         - now widget object become replaced to widget path in arguments to 'call'
         - better error handling and diagnostic for calls to Tcl/Tk
