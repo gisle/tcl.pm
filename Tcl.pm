@@ -278,6 +278,10 @@ use vars qw(@ISA);
 
 Tcl->bootstrap($Tcl::VERSION);
 
+END {
+    Tcl::_Finalize();
+}
+
 #TODO make better wording here
 # %anon_refs keeps track of anonymous subroutines that were created with
 # "CreateComand" method during process of transformation of arguments for

@@ -25,12 +25,64 @@
 #define USE_NON_CONST
 
 /*
- * Both Perl and Tcl use this macro
+ * Both Perl and Tcl use these macros
  */
 #undef STRINGIFY
+#undef JOIN
 
 #include <tcl.h>
 
+#ifdef USE_TCL_STUBS
+/*
+ * If we use the Tcl stubs mechanism, this provides us Tcl version
+ * and direct dll independence, but we must force the loading of
+ * the dll ourselves based on a set of heuristics in NpLoadLibrary.
+ */
+
+#ifndef TCL_LIB_FILE
+# ifdef WIN32
+#   define TCL_LIB_FILE "tcl84.dll"
+# else
+#   define TCL_LIB_FILE "libtcl8.4.so"
+# endif
+#endif
+
+/*
+ * Default directory in which to look for Tcl/Tk libraries.  The
+ * symbol is defined by Makefile.
+ */
+
+#ifndef LIB_RUNTIME_DIR
+#   define LIB_RUNTIME_DIR "."
+#endif
+static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
+
+#ifdef WIN32
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
+#define dlopen(libname, flags)	LoadLibrary(libname)
+#define dlsym(handle, symbol)	GetProcAddress((HINSTANCE) handle, symbol)
+#define dlclose(path)		((void *) FreeLibrary((HMODULE) path))
+#define snprintf _snprintf
+
+#else
+
+#include <dlfcn.h>
+#define HMODULE void *
+#ifndef MAX_PATH
+#define MAX_PATH 1024
+#endif
+
+#endif
+
+/*
+ * Tcl library handle
+ */
+static HMODULE tclHandle      = NULL;
+
+#endif
 
 typedef Tcl_Interp *Tcl;
 typedef AV *Tcl__Var;
@@ -46,6 +98,243 @@ static Tcl_ObjType *tclIntTypePtr = NULL;
 static Tcl_ObjType *tclListTypePtr = NULL;
 static Tcl_ObjType *tclStringTypePtr = NULL;
 static Tcl_ObjType *tclWideIntTypePtr = NULL;
+
+/*
+ * This tells us whether Tcl is in a "callable" state.  Set to 1 in BOOT
+ * and 0 in Tcl__Finalize (END).  Once finalized, we should not make any
+ * more calls to Tcl_* APIs.
+ */
+static int initialized = 0;
+
+/*
+ * FUNCTIONS
+ */
+
+#ifdef USE_TCL_STUBS
+/*
+ *----------------------------------------------------------------------
+ *
+ * NpLoadLibrary --
+ *
+ *
+ * Results:
+ *	None.
+ *
+ * Side effects:
+ *	None.
+ *
+ *----------------------------------------------------------------------
+ */
+
+static int
+NpLoadLibrary(pTHX_ HMODULE *tclHandle)
+{
+    char *pos, *envdll, libname[MAX_PATH];
+    HMODULE handle = (HMODULE) NULL;
+
+    /*
+     * Try a user-supplied Tcl dll to start with.
+     */
+    envdll = getenv("PERL_TCL_DLL");
+    if (envdll != NULL) {
+	handle = dlopen(envdll, RTLD_NOW | RTLD_GLOBAL);
+	if (handle) {
+	    *tclHandle = handle;
+	    return TCL_OK;
+	}
+    }
+
+    if (!handle) {
+	if (strlen(TCL_LIB_FILE) < 3) {
+	    warn("Invalid base Tcl library filename provided: '%s'",
+		    TCL_LIB_FILE);
+	    return TCL_ERROR;
+	}
+
+	/* Try based on full path. */
+	snprintf(libname, MAX_PATH-1, "%s/%s",
+		defaultLibraryDir, TCL_LIB_FILE);
+	handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+	if (!handle) {
+	    /* Try based on anywhere in the path. */
+	    strcpy(libname, TCL_LIB_FILE);
+	    handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+	}
+	if (!handle) {
+	    /* Try different versions anywhere in the path. */
+	    pos = strstr(libname, "tcl8")+4;
+	    if (*pos == '.') {
+		pos++;
+	    }
+	    *pos = '9'; /* count down from '8' to '4'*/
+	    while (!handle && (--*pos > '3')) {
+		handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+	    }
+	}
+    }
+
+#ifdef WIN32
+    if (!handle) {
+	char path[MAX_PATH], vers[MAX_PATH];
+	DWORD result, size = MAX_PATH;
+	HKEY regKey;
+#define TCL_REG_DIR_KEY "Software\\ActiveState\\ActiveTcl"
+
+	result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, TCL_REG_DIR_KEY, 0,
+		KEY_READ, &regKey);
+	if (result != ERROR_SUCCESS) {
+	    warn("Could not access registry \"HKLM\\%s\"\n", TCL_REG_DIR_KEY);
+
+	    result = RegOpenKeyEx(HKEY_CURRENT_USER, TCL_REG_DIR_KEY, 0,
+		    KEY_READ, &regKey);
+	    if (result != ERROR_SUCCESS) {
+		warn("Could not access registry \"HKCU\\%s\"\n",
+			TCL_REG_DIR_KEY);
+		return TCL_ERROR;
+	    }
+	}
+
+	result = RegQueryValueEx(regKey, "CurrentVersion", NULL, NULL,
+		vers, &size);
+	RegCloseKey(regKey);
+	if (result != ERROR_SUCCESS) {
+	    warn("Could not access registry \"%s\" CurrentVersion\n",
+		    TCL_REG_DIR_KEY);
+	    return TCL_ERROR;
+	}
+
+	snprintf(path, MAX_PATH-1, "%s\\%s", TCL_REG_DIR_KEY, vers);
+
+	result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, KEY_READ, &regKey);
+	if (result != ERROR_SUCCESS) {
+	    warn("Could not access registry \"%s\"\n", path);
+	    return TCL_ERROR;
+	}
+
+	size = MAX_PATH;
+	result = RegQueryValueEx(regKey, NULL, NULL, NULL, path, &size);
+	RegCloseKey(regKey);
+	if (result != ERROR_SUCCESS) {
+	    warn("Could not access registry \"%s\" Default\n", TCL_REG_DIR_KEY);
+	    return TCL_ERROR;
+	}
+
+	warn("Found current Tcl installation at \"%s\"\n", path);
+
+	snprintf(libname, MAX_PATH-1, "%s\\bin\\%s", path, TCL_LIB_FILE);
+	handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+    }
+#endif
+
+    if (!handle) {
+	warn("NpLoadLibrary: could not find Tcl dll\n");
+	return TCL_ERROR;
+    }
+    *tclHandle = handle;
+    return TCL_OK;
+}
+
+/*
+ *----------------------------------------------------------------------
+ *
+ * NpInitialize --
+ *
+ *	Create the main interpreter.
+ *
+ * Results:
+ *	The pointer to the main interpreter.
+ *
+ * Side effects:
+ *	Will panic if called twice. (Must call DestroyMainInterp in between)
+ *
+ *----------------------------------------------------------------------
+ */
+
+static void *
+NpInitialize(pTHX_ SV *X)
+{
+    static Tcl_Interp * (* createInterp)() = NULL;
+    static void (* findExecutable)(char *) = NULL;
+    /*
+     * We want the Tcl_InitStubs func static to ourselves - before Tcl
+     * is loaded dyanmically and possibly changes it.
+     */
+    static CONST char *(*initstubs)(Tcl_Interp *, CONST char *, int)
+	= Tcl_InitStubs;
+    Tcl_Interp *npInterp = (Tcl_Interp *) NULL;
+
+#ifdef USE_TCL_STUBS
+    /*
+     * Determine the libname and version number dynamically
+     */
+    if (tclHandle == NULL) {
+	if (NpLoadLibrary(aTHX_ &tclHandle) != TCL_OK) {
+	    warn("Failed to load Tcl dll!");
+	    return NULL;
+	}
+
+	createInterp = (Tcl_Interp * (*)()) dlsym(tclHandle,
+		"Tcl_CreateInterp");
+	if (createInterp == NULL) {
+#ifndef WIN32
+	    char *error = dlerror();
+	    if (error != NULL) {
+		warn(error);
+	    }
+#endif
+	    return NULL;
+	}
+	findExecutable = (void (*)(char *)) dlsym(tclHandle,
+		"Tcl_FindExecutable");
+    }
+#else
+    createInterp   = Tcl_CreateInterp;
+    findExecutable = Tcl_FindExecutable;
+#endif
+
+#ifdef WIN32
+    {
+	char name[MAX_PATH];
+	name[0] = '\0';
+	GetModuleFileNameA((HINSTANCE) tclHandle, name, MAX_PATH);
+	findExecutable(name);
+    }
+#else
+    findExecutable(X && SvPOK(X) ? SvPV_nolen(X) : NULL);
+#endif
+
+    npInterp = createInterp();
+    if (npInterp == (Tcl_Interp *) NULL) {
+	warn("Failed to create main Tcl interpreter!");
+	return NULL;
+    }
+
+    /*
+     * Until Tcl_InitStubs is called, we cannot make any Tcl/Tk API
+     * calls without grabbing them by symbol out of the dll.
+     * This will be Tcl_PkgRequire for non-stubs builds.
+     */
+    if (initstubs(npInterp, "8.4", 0) == NULL) {
+	warn("Failed to create initialize Tcl stubs!");
+	return NULL;
+    }
+
+    if (Tcl_Init(npInterp) != TCL_OK) {
+	CONST84 char *msg = Tcl_GetVar(npInterp, "errorInfo", TCL_GLOBAL_ONLY);
+	warn("Failed to create initialize Tcl:\n%s", msg);
+	return NULL;
+    }
+
+    /*
+     * We no longer need this interpreter.  The API hooks remain stable
+     * because they point into the DLL and are not dependent on this interp.
+     */
+
+    Tcl_DeleteInterp((ClientData) npInterp);
+
+    return (void *) tclHandle;
+}
+#endif
 
 #if DEBUG_REFCOUNTS
 static void
@@ -455,7 +744,12 @@ Tcl_new(class = "Tcl")
 	char *	class
     CODE:
 	RETVAL = newSV(0);
-	sv_setref_pv(RETVAL, class, (void*)Tcl_CreateInterp());
+	/*
+	 * We might consider Tcl_Preserve/Tcl_Release of the interp.
+	 */
+	if (initialized) {
+	    sv_setref_pv(RETVAL, class, (void*)Tcl_CreateInterp());
+	}
     OUTPUT:
 	RETVAL
 
@@ -463,7 +757,9 @@ char *
 Tcl_result(interp)
 	Tcl	interp
     CODE:
-	RETVAL = Tcl_GetStringResult(interp);
+	if (initialized) {
+	    RETVAL = Tcl_GetStringResult(interp);
+	}
     OUTPUT:
 	RETVAL
 
@@ -475,6 +771,7 @@ Tcl_Eval(interp, script)
 	STRLEN	length = NO_INIT
 	char *cscript = NO_INIT
     PPCODE:
+	if (!initialized) { return; }
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
@@ -492,6 +789,7 @@ Tcl_EvalFile(interp, filename)
 	char *	filename
 	SV *	interpsv = ST(0);
     PPCODE:
+	if (!initialized) { return; }
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
@@ -509,6 +807,7 @@ Tcl_GlobalEval(interp, script)
 	STRLEN	length = NO_INIT
 	char *cscript = NO_INIT
     PPCODE:
+	if (!initialized) { return; }
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
@@ -529,6 +828,7 @@ Tcl_EvalFileHandle(interp, handle)
 	SV *	sv = sv_newmortal();
 	char *	s = NO_INIT
     PPCODE:
+	if (!initialized) { return; }
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
         while (s = sv_gets(sv, handle, append))
@@ -567,6 +867,8 @@ Tcl_icall(interp, sv, ...)
 	    int          objc, i, result;
 	    STRLEN       length;
 	    Tcl_CmdInfo	 cmdinfo;
+
+	    if (!initialized) { return; }
 
 	    objv = baseobjv;
 	    objc = items-1;
@@ -702,6 +1004,8 @@ Tcl_icall(interp, sv, ...)
 	    Tcl_Obj **objv = baseobjv;
 	    int       objc, i, result;
 
+	    if (!initialized) { return; }
+
 	    objc = items-1;
 	    if (objc > NUM_OBJS) {
 		New(666, objv, objc, Tcl_Obj *);
@@ -756,12 +1060,36 @@ void
 Tcl_DESTROY(interp)
 	Tcl	interp
     CODE:
+	if (!initialized) { return; }
 	Tcl_DeleteInterp(interp);
+
+void
+Tcl__Finalize(interp=NULL)
+	Tcl	interp
+    CODE:
+	/*
+	 * This should be called from the END block - when we no
+	 * longer plan to use Tcl *AT ALL*.
+	 */
+	if (!initialized) { return; }
+	if (interp) {
+	    Tcl_DeleteInterp(interp);
+	}
+	Tcl_Finalize();
+	initialized = 0;
+#ifdef USE_TCL_STUBS
+	if (tclHandle) {
+	    dlclose(tclHandle);
+	    tclHandle = NULL;
+	}
+#endif
+
 
 void
 Tcl_Init(interp)
 	Tcl	interp
     CODE:
+	if (!initialized) { return; }
 	if (Tcl_Init(interp) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
@@ -773,7 +1101,9 @@ Tcl_DoOneEvent(interp, flags)
 	Tcl	interp
 	int	flags
     CODE:
-	RETVAL = Tcl_DoOneEvent(flags);
+	if (initialized) {
+	    RETVAL = Tcl_DoOneEvent(flags);
+	}
     OUTPUT:
 	RETVAL
 
@@ -785,6 +1115,7 @@ Tcl_CreateCommand(interp,cmdName,cmdProc,clientData=&PL_sv_undef,deleteProc=Null
 	SV *	clientData
 	SV *	deleteProc
     CODE:
+	if (!initialized) { return; }
 	if (SvIOK(cmdProc))
 	    Tcl_CreateCommand(interp, cmdName, (Tcl_CmdProc *) SvIV(cmdProc),
 			      (ClientData) SvIV(clientData), NULL);
@@ -807,6 +1138,7 @@ Tcl_SetResult(interp, sv)
 	Tcl	interp
 	SV *	sv
     CODE:
+	if (!initialized) { return; }
 	{
 	    Tcl_Obj *objPtr = TclObjFromSv(aTHX_ sv);
 	    /* Tcl_SetObjResult will incr refcount */
@@ -933,6 +1265,7 @@ Tcl_perl_attach(interp, name)
 	Tcl	interp
 	char *	name
     PPCODE:
+	if (!initialized) { return; }
 	PUTBACK;
 	/* create Tcl array */
 	Tcl_SetVar2(interp, name, NULL, "", 0);
@@ -961,6 +1294,7 @@ Tcl_perl_detach(interp, name)
 	Tcl	interp
 	char *	name
     PPCODE:
+	if (!initialized) { return; }
 	PUTBACK;
 	/* stop trace */
         Tcl_UntraceVar2(interp, name, 0,
@@ -985,6 +1319,7 @@ FETCH(av, key = NULL)
 	 * This handles both hash and scalar fetches. The blessed object
 	 * passed in is [$interp, $varname, $flags] ($flags optional).
 	 */
+	if (!initialized) { return; }
 	if (AvFILL(av) != 1 && AvFILL(av) != 2) {
 	    croak("bad object passed to Tcl::Var::FETCH");
 	}
@@ -1019,6 +1354,7 @@ STORE(av, sv1, sv2 = NULL)
 	 * This handles both hash and scalar stores. The blessed object
 	 * passed in is [$interp, $varname, $flags] ($flags optional).
 	 */
+	if (!initialized) { return; }
 	if (AvFILL(av) != 1 && AvFILL(av) != 2)
 	    croak("bad object passed to Tcl::Var::STORE");
 	sv = *av_fetch(av, 0, FALSE);
@@ -1051,8 +1387,15 @@ MODULE = Tcl	PACKAGE = Tcl
 BOOT:
     {
 	SV *x = GvSV(gv_fetchpv("\030", TRUE, SVt_PV)); /* $^X */
+#ifdef USE_TCL_STUBS
+	if (NpInitialize(aTHX_ x) == NULL) {
+	    croak("Unable to initialize Tcl");
+	}
+#else
 	/* Ideally this would be passed the dll instance location. */
 	Tcl_FindExecutable(x && SvPOK(x) ? SvPV_nolen(x) : NULL);
+#endif
+	initialized = 1;
     }
 
     tclBooleanTypePtr   = Tcl_GetObjType("boolean");

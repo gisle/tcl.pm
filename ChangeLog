@@ -1,5 +1,12 @@
 2004-04-29  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* Makefile.PL: Added --usestubs option, which adds DEFINE flags.
+	* Tcl.pm:      Add stubs support to give us version and dll location
+	* Tcl.xs:      independence.  Tcl.xs can handle the loading and
+	finalization of Tcl.  Tcl_Finalize is now called by an END block
+	in Tcl.pm in all cases, flipping a bit that says we shouldn't call
+	any more Tcl_* APIs.
+
 	* Tcl.xs (Tcl_DoOneEvent): expose Tcl::DoOneEvent for perl and add
 	TCL_*_EVENTS and TCL_DONT_WAIT constants to BOOT block.
 	(TclObjFromSv): remove SvIOK check in SvNOK block to force the

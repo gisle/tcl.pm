@@ -12,6 +12,7 @@ use ExtUtils::MakeMaker;
 my $tclsh = 'tclsh';
 my $tclconfig;
 my $buildspec;
+my $usestubs;
 my $libpath;
 my $incpath;
 my $wince;
@@ -19,11 +20,12 @@ my $wince;
 GetOptions("tclsh=s", \$tclsh,
 	   "tclconfig=s", \$tclconfig,
 	   "buildspec", \$buildspec,
+	   "usestubs", \$usestubs,
 	  )
     || die <<EOT;
 
 Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>]
-                        [--buildspec] [<makemaker opts>...]
+                        [--buildspec] [--usestubs] [<makemaker opts>...]
 
 or for WinCE cross-compilation:
 
@@ -54,11 +56,32 @@ if (defined $Cross::platform) {
     exit;
 }
 
+my $buildtype = ($usestubs ? "stub" : "");
+my $defs      = ($usestubs ? "-DUSE_TCL_STUBS" : "");
+
+# If using stubs, we will set the LIB_RUNTIME_DIR and TCL_LIB_FILE
+# to point to the install location as the default dll to load.
+
 if ($tclconfig) {
     die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
+
     # Retrieve all info based on tclConfig.sh
-    my $libspecvar = "TCL_BUILD_LIB_SPEC" if $buildspec;
-    ($libpath, $incpath) = process_tclconfig($tclconfig, $libspecvar);
+    my $variant    = ($usestubs ? "_STUB" : "");
+    $variant       = "_BUILD$variant" if $buildspec;
+    my $libspecvar = "TCL${variant}_LIB_SPEC";
+    my %tclcfg;
+    process_tclconfig($tclconfig, \%tclcfg);
+    $libpath = $tclcfg{$libspecvar};
+    $incpath = $tclcfg{'TCL_INCLUDE_SPEC'};
+    if ($usestubs) {
+	if ($^O eq 'MSWin32') {
+	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/bin\\\"";
+	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_DLL_FILE'}\\\""; 
+	} else {
+	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/lib\\\"";
+	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\""; 
+	}
+    }
 } else {
     open(TCLSH, "$tclsh tclcfg.tcl |") or die "error starting tclsh: $!\n";
     my $tclcfg = join '', <TCLSH>;
@@ -69,7 +92,8 @@ if ($tclconfig) {
     if (0 && -f $tclcfg{'tclConfig.sh'}) {
 	# Retrieve all info based on tclConfig.sh
 	# Don't do this unless the user passes --tclconfig
-	($libpath, $incpath) = process_tclconfig($tclcfg{'tclConfig.sh'});
+	process_tclconfig($tclcfg{'tclConfig.sh'}, \%tclcfg);
+	# libpath/incpath vars need to be set here if used ...
     } else {
 	my $tclver = $tclcfg{tcl_version};
 
@@ -82,23 +106,28 @@ if ($tclconfig) {
 	if ($tclcfg{tcl_library} =~ /^(.*)[\\\/]lib[\\\/]/) {
 	    $libpath = "-L$1/lib";
 	    $incpath = "-I$1/include";
+	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$1/lib\\\"" if $usestubs;
 	}
 
 	if ($^O eq 'MSWin32') {
 	    $tclver=~s/\.//;
+	    $defs .= " -DTCL_LIB_FILE=\\\"tcl$tclver.dll\\\"" if $usestubs; 
 	}
 	elsif ($^O eq 'freebsd') {
 	    $tclver=~s/\.//;
 	    $tclsh=~/([\d.]+)$/ and $incpath .= " -I/usr/local/include/tcl$1";
+	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.so\\\"" if $usestubs; 
 	}
 	else {
-	    $tclver = '';
+	    #$tclver = '';
+	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.so\\\"" if $usestubs; 
 	}
-	$libpath .= " -ltcl$tclver";
+	$libpath .= " -ltcl$buildtype$tclver";
     }
 }
-print "LIBS = $libpath\n";
-print "INC  = $incpath\n";
+print "LIBS   = $libpath\n";
+print "INC    = $incpath\n";
+print "DEFINE = $defs\n";
 
 #print <<"#EOS";
 WriteMakefile(
@@ -106,6 +135,7 @@ WriteMakefile(
     VERSION_FROM => 'Tcl.pm',
     LIBS => ["$libpath"],
     INC => "$incpath",
+    DEFINE => $defs,
 );
 
 #EOS
@@ -113,19 +143,19 @@ WriteMakefile(
 sub process_tclconfig {
     # Process a tclConfig.sh file for build info
     my $tclconfig = shift;
-    my $libspecvar = shift || "TCL_LIB_SPEC";
-    my $incspecvar = shift || "TCL_INCLUDE_SPEC";
+    my $hashref   = shift;
 
     open(TCLSH, $tclconfig)
 	or die "error opening file '$tclconfig': $!\n";
     print "Using config data in $tclconfig\n";
     my $tclcfg = join '', <TCLSH>;
     close(TCLSH);
-    my %tclcfg = $tclcfg =~ /^(\w+)=['"]?(.*?)["']?\n/gm;
+    %$hashref = $tclcfg =~ /^(\w+)=['"]?(.*?)["']?\n/gm;
 
-    # Handle sh subs like ${TCL_DBGX}
-    $tclcfg{$libspecvar} =~ s/\$\{(\w+)\}/$tclcfg{$1}/g;
-    # Handle any cygdrive-style paths
-    $tclcfg{$libspecvar} =~ s,/cygdrive/(\w)/,$1:/,ig;
-    return $tclcfg{$libspecvar}, $tclcfg{$incspecvar};
+    for my $k (keys %$hashref) {
+	# Handle sh subs like ${TCL_DBGX}
+	$hashref->{$k} =~ s/\$\{(\w+)\}/(exists $hashref->{$1} ? $hashref->{$1} : $&)/eg;
+	# Handle any cygdrive-style paths
+	$hashref->{$k} =~ s,/cygdrive/(\w)/,$1:/,ig;
+    }
 }
