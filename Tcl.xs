@@ -35,6 +35,117 @@ typedef AV *Tcl__Var;
 
 static int findexecutable_called = 0;
 
+/*
+ * Variables denoting the Tcl object types defined in the core.
+ */
+
+static Tcl_ObjType *tclBooleanTypePtr = NULL;
+static Tcl_ObjType *tclByteArrayTypePtr = NULL;
+static Tcl_ObjType *tclDoubleTypePtr = NULL;
+static Tcl_ObjType *tclIntTypePtr = NULL;
+static Tcl_ObjType *tclListTypePtr = NULL;
+static Tcl_ObjType *tclStringTypePtr = NULL;
+static Tcl_ObjType *tclWideIntTypePtr = NULL;
+
+static int
+has_highbit(CONST char *s,int l)
+{
+    CONST char *e = s+l;
+    while (s < e) {
+	if (*s++ & 0x80)
+	    return 1;
+    }
+    return 0;
+}
+
+static SV *
+SvFromTclObj(Tcl_Obj *objPtr)
+{
+    SV *sv;
+    int len;
+    char *str;
+
+    if (tclBooleanTypePtr == NULL) {
+	tclBooleanTypePtr   = Tcl_GetObjType("boolean");
+	tclByteArrayTypePtr = Tcl_GetObjType("bytearray");
+	tclDoubleTypePtr    = Tcl_GetObjType("double");
+	tclIntTypePtr       = Tcl_GetObjType("int");
+	tclListTypePtr      = Tcl_GetObjType("list");
+	tclStringTypePtr    = Tcl_GetObjType("string");
+	tclWideIntTypePtr   = Tcl_GetObjType("wideInt");
+    }
+
+    if (objPtr->typePtr == tclIntTypePtr) {
+	return newSViv(objPtr->internalRep.longValue);
+    }
+    else if (objPtr->typePtr == tclDoubleTypePtr) {
+	return newSVnv(objPtr->internalRep.doubleValue);
+    }
+    else if (objPtr->typePtr == tclBooleanTypePtr) {
+	return newSViv((objPtr->internalRep.longValue != 0));
+    }
+    else if (objPtr->typePtr == tclByteArrayTypePtr) {
+	str = Tcl_GetByteArrayFromObj(objPtr, &len);
+	sv = newSVpvn(str, len);
+    }
+    /* tclStringTypePtr is true unicode */
+    /* tclWideIntTypePtr is 64-bit int */
+    /* tclListTypePtr should become an AV */
+    else {
+	str = Tcl_GetStringFromObj(objPtr, &len);
+	sv = newSVpvn(str, len);
+	/* should turn on, but let's check this first for efficiency */
+	if (len && has_highbit(str, len)) {
+	    SvUTF8_on(sv);
+	}
+    }
+    return sv;
+}
+
+static Tcl_Obj *
+TclObjFromSv(SV *sv)
+{
+    Tcl_Obj *objPtr = NULL;
+
+    if (SvROK(sv) && SvTYPE(sv) == SVt_PVAV) {
+	AV *av    = (AV *) SvRV(sv);
+	I32 avlen = av_len(av);
+	int i;
+
+	objPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+
+	if (avlen == -1) { avlen = 0; }
+	for (i = 0; i < avlen; i++) {
+	    sv = sv_mortalcopy(*av_fetch(av, i, FALSE));
+	    Tcl_ListObjAppendElement(NULL, objPtr, TclObjFromSv(sv));
+	}
+    }
+    else if (SvPOK(sv)) {
+	STRLEN length;
+	char *str = SvPV(sv, length);
+	objPtr = Tcl_NewStringObj(str, length);
+    }
+    else if (SvNOK(sv)) {
+	objPtr = Tcl_NewDoubleObj(SvNV(sv));
+    }
+    else if (SvUOK(sv)) {
+	objPtr = Tcl_NewIntObj((int)SvUV(sv));
+    }
+    else if (SvIOK(sv)) {
+	objPtr = Tcl_NewIntObj(SvIV(sv));
+    }
+    else {
+	/*
+	 * Catch-all
+	 */
+	STRLEN length;
+	char *str = SvPV(sv, length);
+	objPtr = Tcl_NewStringObj(str, length);
+    }
+
+    return objPtr;
+}
+
 int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
 	int argc, char **argv)
 {
@@ -74,8 +185,9 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
      * for callback to return undef. Hence following: */
     rc = TCL_OK;
     
-    if (SvOK(sv))
+    if (SvOK(sv)) {
 	Tcl_SetResult(interp, SvPV_nolen(sv), TCL_VOLATILE);
+    }
     /*
      * If the routine returned undef, it indicates that it has done the
      * SetResult itself and that we should return TCL_ERROR
@@ -96,8 +208,7 @@ Tcl_PerlCallDeleteProc(ClientData clientData)
      * (where $deleteProc is optional but we don't need it here anyway)
      */
 
-    if (AvFILL(av) == 3)
-    {
+    if (AvFILL(av) == 3) {
 	dSP;
 
 	PUSHMARK(sp);
@@ -118,23 +229,36 @@ Tcl interp;
 char *caller;
 {
     dSP;
-    int argc;
-    char **argv, **tofree;
-    
-    char *result = Tcl_GetStringResult(interp);
+    Tcl_Obj *objPtr, **objv;
+    int gimme, objc, i;
 
-    if (!GIMME)
-	PUSHs(sv_2mortal(newSVpv(result, 0)));
-    else {
-	if (Tcl_SplitList(interp, result, &argc, &argv) != TCL_OK)
+    objPtr = Tcl_GetObjResult(interp);
+
+    gimme = GIMME_V;
+    if (gimme == G_SCALAR) {
+	/*
+	 * This checks Tcl_Obj type
+	 */
+	PUSHs(sv_2mortal(SvFromTclObj(objPtr)));
+    }
+    else if (gimme == G_ARRAY) {
+	if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv)
+		!= TCL_OK) {
 	    croak("%s called in list context did not return a valid Tcl list",
-		  caller);
-	
-	tofree = argv;
-	EXTEND(sp, argc);
-	while (argc--)
-	    PUSHs(sv_2mortal(newSVpv(*argv++, 0)));
-	ckfree((char *) tofree);
+		    caller);
+	}
+	if (objc) {
+	    EXTEND(sp, objc);
+	    for (i = 0; i < objc; i++) {
+		/*
+		 * This checks Tcl_Obj type
+		 */
+		PUSHs(sv_2mortal(SvFromTclObj(objv[i])));
+	    }
+	}
+    }
+    else {
+	/* G_VOID context - ignore result */
     }
     PUTBACK;
     return;
@@ -174,12 +298,17 @@ Tcl_Eval(interp, script)
 	Tcl	interp
 	SV *	script
 	SV *	interpsv = ST(0);
-    PPCODE:
+	STRLEN	length = NO_INIT
+	char *cscript = NO_INIT
+    PPCODE: 
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
-	if (Tcl_Eval(interp, SvPV_nolen(sv_mortalcopy(script))) != TCL_OK)
+	/* sv_mortalcopy here prevents stringifying script - necessary ?? */
+	cscript = SvPV(sv_mortalcopy(script), length);
+	if (Tcl_EvalEx(interp, cscript, length, 0) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
+	}
 	prepare_Tcl_result(interp, "Tcl::Eval");
 	SPAGAIN;
 
@@ -192,8 +321,9 @@ Tcl_EvalFile(interp, filename)
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
-	if (Tcl_EvalFile(interp, filename) != TCL_OK)
+	if (Tcl_EvalFile(interp, filename) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
+	}
 	prepare_Tcl_result(interp, "Tcl::EvalFile");
 	SPAGAIN;
 
@@ -202,12 +332,17 @@ Tcl_GlobalEval(interp, script)
 	Tcl	interp
 	SV *	script
 	SV *	interpsv = ST(0);
+	STRLEN	length = NO_INIT
+	char *cscript = NO_INIT
     PPCODE:
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
-	if (Tcl_GlobalEval(interp, SvPV_nolen(sv_mortalcopy(script))) != TCL_OK)
+	/* sv_mortalcopy here prevents stringifying script - necessary ?? */
+	cscript = SvPV(sv_mortalcopy(script), length);
+	if (Tcl_EvalEx(interp, cscript, length, TCL_EVAL_GLOBAL) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
+	}
 	prepare_Tcl_result(interp, "Tcl::GlobalEval");
 	SPAGAIN;
 
@@ -245,7 +380,7 @@ Tcl_icall(interp, proc, ...)
 	SV *		proc
 	Tcl_CmdInfo	cmdinfo = NO_INIT
         static int	i, result = NO_INIT
-        static STRLEN	proclen, length = NO_INIT
+        static STRLEN	length = NO_INIT
 	static int	argc = NO_INIT
 	static Tcl_Obj **   objv = NO_INIT
 	static char **	argv = NO_INIT
@@ -265,15 +400,54 @@ Tcl_icall(interp, proc, ...)
 	}
 	SP++;			/* bypass the interp argument */
 	proc = sv_mortalcopy(*++SP);  /* get name of Tcl command into argv[0] */
-	argv[0] = SvPV(proc, proclen);
-	if (!Tcl_GetCommandInfo(interp, argv[0], &cmdinfo))
+	argv[0] = SvPV(proc, length);
+	if (!Tcl_GetCommandInfo(interp, argv[0], &cmdinfo)) {
 	    croak("Tcl procedure '%s' not found",argv[0]);
+	}
 
 	Tcl_ResetResult(interp);
 
-        if (cmdinfo.proc) {
+        if (cmdinfo.objProc) {
+            /*
+	     * We might want to check that this isn't TclInvokeStringCommand,
+	     * which just means we waste time making Tcl_Obj's.
+	     *
+	     * Emulate TclInvokeObjectCommand (from Tcl), namely create the
+	     * object argument array "objv" before calling right procedure
+             */
+	    objv[0] = Tcl_NewStringObj(argv[0], length);
+            for (i = 1;  i < argc;  i++) {
+		proc = sv_mortalcopy(*++SP);
+#if 1
+		/*
+		 * Use efficient Sv to Tcl_Obj conversion
+		 */
+        	objv[i] = TclObjFromSv(proc);
+#else
+        	str = SvPV(proc, length);
+        	objv[i] = Tcl_NewStringObj(str,length);
+#endif
+        	Tcl_IncrRefCount(objv[i]);
+            }
+	    SP -= items;
+	    PUTBACK;
+
+	    /*
+	     * Invoke the command's object-based Tcl_ObjCmdProc.
+	     */
+            result = (*cmdinfo.objProc)(cmdinfo.objClientData, interp,
+		    argc, objv);
+
+	    /*
+	     * Decrement the ref counts for the argument objects created above
+	     */
+            for (i = 0;  i < argc;  i++) {
+        	Tcl_DecrRefCount(objv[i]);
+	    }
+        }
+        else {
 	    /* 
-	     * good case. 
+	     * we have cmdinfo.objProc==0
 	     * prepare string arguments into argv (1st is already done)
 	     * and call found procedure
 	     */
@@ -285,85 +459,17 @@ Tcl_icall(interp, proc, ...)
 		proc = sv_mortalcopy(*++SP);
 		argv[i] = SvPV_nolen(proc);
 	    }
-	    argv[argc] = (char *) 0;
 	    SP -= items;
 	    PUTBACK;
             /*
 	     * Invoke the command's procedure
 	     */
-            if ((*cmdinfo.proc)(cmdinfo.clientData,interp,items-1, argv) != TCL_OK)
-		croak(Tcl_GetStringResult(interp));
-	    prepare_Tcl_result(interp, "Tcl::call");
+            result = (*cmdinfo.proc)(cmdinfo.clientData, interp, argc, argv);
         }
-        else {
-            /* 
-	     * we have cmdinfo.proc==0
-	     * strange case, but some commands place NULL into proc field of
-	     * Tcl_CmdInfo structure
-	     * Essentially we do here what TclInvokeObjectCommand (from Tcl)
-	     * do, namely create the object argument array "objv" before
-	     * calling right procedure
-             */
-       	    objv[0] = Tcl_NewStringObj(argv[0],proclen);
-            for (i = 1;  i < argc;  i++) {
-		proc = sv_mortalcopy(*++SP);
-        	str = SvPV(proc, length);
-        	objv[i] = Tcl_NewStringObj(str,length);
-        	Tcl_IncrRefCount(objv[i]);
-            }
-            objv[argc] = 0;
-	    PUTBACK;
-
-	    /*
-	     * Invoke the command's object-based Tcl_ObjCmdProc.
-	     */
-            result = (cmdinfo.objProc)(cmdinfo.objClientData, interp, argc, objv);
-
-	    /*
-	     * Move the interpreter's object result to the string result, 
-	     * then reset the object result.
-	     */
-#if TCL_MAJOR_VERSION>8 || TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>0
-            Tcl_SetResult(interp, Tcl_GetString(Tcl_GetObjResult(interp)),
-		    TCL_VOLATILE);
-#else /* elder Tcl do not have Tcl_GetString */
-            Tcl_SetResult(interp, Tcl_GetObjResult(interp)->bytes,
-		    TCL_VOLATILE);
-#endif
-	    
-	    /*
-	     * Decrement the ref counts for the argument objects created above
-	     */
-            for (i = 0;  i < argc;  i++) {
-        	Tcl_DecrRefCount(objv[i]);
-	    }
-            if (result != TCL_OK) {
-       	        croak(Tcl_GetStringResult(interp));
-	    }
-#if 0
-            /* Following lines of code are here in case we could not work
-	     * standard way
-	     * (say it's procedure address is zero)
-             * We warn about such case and just call "Eval"
-             */
-            SV *svline = newSVpv(argv[0],0);
-            for (i = 1; i < items - 1; i++) {
-		sv_catpv(svline," ");
-		sv_catpv(svline,argv[i]);
-            }
-	    if (!fixme_warned) {
-		warn("FIXME. slowdown because of frustration, command=%s\n"
-		     " (this warning is printed only once)\n",
-		    SvPV_nolen(svline));
-		fixme_warned = 1;
-	    }
-            if (Tcl_Eval(interp, SvPV_nolen(sv_mortalcopy(svline))) != TCL_OK) {
-       	        croak(Tcl_GetStringResult(interp));
-	    }
-#endif /* 0 */
-
-	    prepare_Tcl_result(interp, "Tcl::call");
-        }
+        if (result != TCL_OK) {
+       	    croak(Tcl_GetStringResult(interp));
+	}
+	prepare_Tcl_result(interp, "Tcl::call");
         SPAGAIN;
 
 void

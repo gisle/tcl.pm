@@ -2,6 +2,13 @@
 
 	* Tcl.xs: use ANSI prototypes for some functions.
 	Remove use of PL_na in favor of SvPV_nolen.
+	(SvFromTclObj, TclObjFromSv): create bridge routines to translate
+	to/from Tcl_Obj and SV.  May need refinement.
+	(prepare_Tcl_result): made use of newer GIMME_V macro and Tcl_Obj
+	based return results.
+	(Tcl_Eval, Tcl_GlobalEval): use more efficient Tcl_EvalEx.
+	(Tcl_icall): prefer objProc over string proc and make efficient
+	Tcl_Obj list out of SVs.
 
 2004-04-01  Jeff Hobbs  <jeffh@ActiveState.com>
 
