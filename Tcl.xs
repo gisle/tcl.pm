@@ -83,7 +83,7 @@ static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
 static HMODULE tclHandle = NULL;
 
 static Tcl_Interp *g_Interp = NULL;
-static int (* tclKitDll_AppInit)(Tcl_Interp *) = NULL;
+static int (* tclKit_AppInit)(Tcl_Interp *) = NULL;
 
 #else
 
@@ -91,7 +91,7 @@ static int (* tclKitDll_AppInit)(Tcl_Interp *) = NULL;
  * !USE_TCL_STUBS
  */
 
-static int (* tclKitDll_AppInit)(Tcl_Interp *) = Tcl_Init;
+static int (* tclKit_AppInit)(Tcl_Interp *) = Tcl_Init;
 
 #endif
 
@@ -132,16 +132,18 @@ static HV *hvInterps = NULL;
  *
  *
  * Results:
- *	None.
+ *	Stores the handle of the library found in tclHandle and the
+ *	name it successfully loaded from in dllFilename (if dllFilenameSize
+	is != 0).
  *
  * Side effects:
- *	None.
+ *	Loads the library - user needs to dlclose it..
  *
  *----------------------------------------------------------------------
  */
 
 static int
-NpLoadLibrary(pTHX_ HMODULE *tclHandle)
+NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 {
     char *pos, *envdll, libname[MAX_PATH];
     HMODULE handle = (HMODULE) NULL;
@@ -154,6 +156,9 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle)
 	handle = dlopen(envdll, RTLD_NOW | RTLD_GLOBAL);
 	if (handle) {
 	    *tclHandle = handle;
+	    if (dllFilenameSize > 0) {
+		memcpy(dllFilename, envdll, dllFilenameSize);
+	    }
 	    return TCL_OK;
 	}
     }
@@ -245,6 +250,9 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle)
 	return TCL_ERROR;
     }
     *tclHandle = handle;
+    if (dllFilenameSize > 0) {
+	memcpy(dllFilename, libname, dllFilenameSize);
+    }
     return TCL_OK;
 }
 
@@ -275,6 +283,8 @@ NpInitialize(pTHX_ SV *X)
      */
     static CONST char *(*initstubs)(Tcl_Interp *, CONST char *, int)
 	= Tcl_InitStubs;
+    char dllFilename[MAX_PATH];
+    dllFilename[0] = '\0';
 
 #ifdef USE_TCL_STUBS
     /*
@@ -288,7 +298,8 @@ NpInitialize(pTHX_ SV *X)
 		"Tcl_CreateInterp");
 
 	if (createInterp == NULL) {
-	    if (NpLoadLibrary(aTHX_ &tclHandle) != TCL_OK) {
+	    if (NpLoadLibrary(aTHX_ &tclHandle, dllFilename, MAX_PATH)
+		    != TCL_OK) {
 		warn("Failed to load Tcl dll!");
 		return TCL_ERROR;
 	    }
@@ -308,8 +319,8 @@ NpInitialize(pTHX_ SV *X)
 	findExecutable = (void (*)(char *)) dlsym(tclHandle,
 		"Tcl_FindExecutable");
 
-	tclKitDll_AppInit = (int (*)(Tcl_Interp *)) dlsym(tclHandle,
-		"TclKitDll_AppInit");
+	tclKit_AppInit = (int (*)(Tcl_Interp *)) dlsym(tclHandle,
+		"TclKit_AppInit");
     }
 #else
     createInterp   = Tcl_CreateInterp;
@@ -317,12 +328,10 @@ NpInitialize(pTHX_ SV *X)
 #endif
 
 #ifdef WIN32
-    {
-	char name[MAX_PATH];
-	name[0] = '\0';
-	GetModuleFileNameA((HINSTANCE) tclHandle, name, MAX_PATH);
-	findExecutable(name);
+    if (dllFilename[0] == '\0') {
+	GetModuleFileNameA((HINSTANCE) tclHandle, dllFilename, MAX_PATH);
     }
+    findExecutable(dllFilename);
 #else
     findExecutable(X && SvPOK(X) ? SvPV_nolen(X) : NULL);
 #endif
@@ -343,10 +352,30 @@ NpInitialize(pTHX_ SV *X)
 	return TCL_ERROR;
     }
 
-    if (tclKitDll_AppInit == NULL) {
-	tclKitDll_AppInit = Tcl_Init;
+    /*
+     * If we didn't find TclKit_AppInit, then this is a regular Tcl
+     * installation, so invoke Tcl_Init.
+     * Otherwise, we need to set the kit path to indicate we want to
+     * use the dll as our base kit.
+     */
+    if (tclKit_AppInit == NULL) {
+	tclKit_AppInit = Tcl_Init;
+    } else {
+	char * (* tclKit_SetKitPath)(char *) = NULL;
+	/*
+	 * We need to see if this has TclKit_SetKitPath
+	 */
+	if ((dllFilename[0] != '\0')
+		&& (tclKit_SetKitPath = (char * (*)(char *)) dlsym(tclHandle,
+			    "TclKit_SetKitPath")) != NULL) {
+	    /*
+	     * XXX: Need to figure out how to populate dllFilename if
+	     * NpLoadLibrary didn't do it for us on Unix.
+	     */
+	    tclKit_SetKitPath(dllFilename);
+	}
     }
-    if (tclKitDll_AppInit(g_Interp) != TCL_OK) {
+    if (tclKit_AppInit(g_Interp) != TCL_OK) {
 	CONST84 char *msg = Tcl_GetVar(g_Interp, "errorInfo", TCL_GLOBAL_ONLY);
 	warn("Failed to initialize Tcl:\n%s", msg);
 	return TCL_ERROR;
@@ -1169,7 +1198,7 @@ Tcl_Init(interp)
 	Tcl	interp
     CODE:
 	if (!initialized) { return; }
-	if (tclKitDll_AppInit(interp) != TCL_OK) {
+	if (tclKit_AppInit(interp) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
 	Tcl_CreateObjCommand(interp, "::perl::Eval", Tcl_EvalInPerl,
