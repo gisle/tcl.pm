@@ -26,7 +26,7 @@ GetOptions("tclsh=s", \$tclsh,
 Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>]
                         [--buildspec] [<makemaker opts>...]
 
-or for WinCE:
+or for WinCE cross-compilation:
 
        perl -MCross=[your-cross-name] Makefile.PL --wince PERL_CORE=1
              PERL_SRC=[your-perl-distribution-for-wince-crosscompiling]
