@@ -1,4 +1,4 @@
-/* 
+/*
  * Tcl.xs --
  *
  *	This file contains XS code for the Perl's Tcl bridge module.
@@ -148,7 +148,7 @@ TclObjFromSv(pTHX_ SV *sv)
 
     if (SvGMAGICAL(sv))
 	mg_get(sv);
-    
+
     if (SvROK(sv) && !SvOBJECT(SvRV(sv)) && (SvTYPE(SvRV(sv)) == SVt_PVAV)) {
 	/*
 	 * Recurse into ARRAYs, turning them into Tcl list Objs
@@ -269,7 +269,7 @@ Tcl_PerlCallDeleteProc(ClientData clientData)
 {
     dTHX; /* fetch context */
     AV *av = (AV *) clientData;
-    
+
     /*
      * av = [$perlsub, $realclientdata, $interp, $deleteProc]
      * (where $deleteProc is optional but we don't need it here anyway)
@@ -377,7 +377,7 @@ Tcl_Eval(interp, script)
 	SV *	interpsv = ST(0);
 	STRLEN	length = NO_INIT
 	char *cscript = NO_INIT
-    PPCODE: 
+    PPCODE:
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
@@ -526,7 +526,7 @@ Tcl_icall(interp, sv, ...)
 		Tcl_DecrRefCount(objv[0]);
 	    }
 	    else {
-		/* 
+		/*
 		 * we have cmdinfo.objProc==0
 		 * prepare string arguments into argv (1st is already done)
 		 * and call found procedure
@@ -824,18 +824,20 @@ Tcl_perl_attach(interp, name)
 	    TCL_TRACE_ARRAY,
 	    &var_trace,
 	    NULL /* clientData*/
-	    ) != TCL_OK) {
+	    ) != TCL_OK)
+	{
 	    croak(Tcl_GetStringResult(interp));
 	}
 	if (Tcl_TraceVar(interp, name,
 	    TCL_TRACE_READS | TCL_TRACE_WRITES | TCL_TRACE_UNSETS,
 	    &var_trace,
 	    NULL /* clientData*/
-	    ) != TCL_OK) {
+	    ) != TCL_OK)
+	{
 	    croak(Tcl_GetStringResult(interp));
 	}
         SPAGAIN;
-       
+
 void
 Tcl_perl_detach(interp, name)
 	Tcl	interp

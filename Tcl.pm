@@ -115,7 +115,7 @@ code as:
 
 3.  As a special case, it is supported a mechanism to deal with Tk's special
 event variables (they are mentioned as '%x', '%y' and so on throughout Tcl).
-Before suborutine reference that uses such variables there must be placed a 
+Before suborutine reference that uses such variables there must be placed a
 reference to reference to a string that enumerates all desired fields.
 After this is done, access to event fields is performed via Tcl::Ev subroutine.
 Example:
