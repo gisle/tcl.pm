@@ -851,20 +851,30 @@ Tcl_SplitList(interp, str)
 	    ckfree((char *) tofree);
 	}
 
-char *
+SV *
 Tcl_SetVar(interp, varname, value, flags = 0)
 	Tcl	interp
 	char *	varname
-	char *	value
+	SV *	value
 	int	flags
+    CODE:
+	RETVAL = SvFromTclObj(aTHX_ Tcl_SetVar2Ex(interp, varname, NULL,
+				      TclObjFromSv(aTHX_ value), flags));
+    OUTPUT:
+	RETVAL
 
-char *
+SV *
 Tcl_SetVar2(interp, varname1, varname2, value, flags = 0)
 	Tcl	interp
 	char *	varname1
 	char *	varname2
-	char *	value
+	SV *	value
 	int	flags
+    CODE:
+	RETVAL = SvFromTclObj(aTHX_ Tcl_SetVar2Ex(interp, varname1, varname2,
+				      TclObjFromSv(aTHX_ value), flags));
+    OUTPUT:
+	RETVAL
 
 SV *
 Tcl_GetVar(interp, varname, flags = 0)
