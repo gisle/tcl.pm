@@ -1,3 +1,7 @@
+2004-04-25  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* Tcl.pm: rename Tcl::EV to Tcl::Ev
+
 2004-04-22  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (SvFromTclObj): For boolean types, use the string value

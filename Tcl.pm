@@ -116,16 +116,16 @@ code as:
 3.  As a special case, it is supported a mechanism to deal with Tk's
 special event variables (they are mentioned as '%x', '%y' and so on
 throughout Tcl).  When creating a subrutine reference that uses such
-variables, you must declare the desired variables using Tcl::EV as
+variables, you must declare the desired variables using Tcl::Ev as
 the first argument to the subroutine.  Example:
 
   sub textPaste {
       my ($x,$y,$w) = @_;
       widget($w)->insert("\@$x,$y", $interp->Eval('selection get'));
   }
-  $widget->bind('<2>', [\&textPaste, Tcl::EV('%x', '%y'), $c] );
+  $widget->bind('<2>', [\&textPaste, Tcl::Ev('%x', '%y'), $c] );
 
-=item Tcl::EV (FIELD, ...)
+=item Tcl::Ev (FIELD, ...)
 
 Used to declare %-substitution variables of interest to a subroutine
 callback.  FIELD is expected to be of the form "%#" where # is a single
@@ -331,11 +331,11 @@ sub call {
 	    # We have been passed something like [\&subroutine, $arg1, ...]
 	    # Create a proc in Tcl that invokes this subroutine with args
 	    my $events;
-	    # Look for Tcl::EV objects as the first arg - these must be
+	    # Look for Tcl::Ev objects as the first arg - these must be
 	    # passed through for Tcl to evaluate.  Used primarily for %-subs
-	    # This could check for any arg ref being Tcl::EV obj, but it
+	    # This could check for any arg ref being Tcl::Ev obj, but it
 	    # currently doesn't.
-	    if ($#$arg >= 1 && ref($arg->[1]) eq 'Tcl::EV') {
+	    if ($#$arg >= 1 && ref($arg->[1]) eq 'Tcl::Ev') {
 		$events = splice(@$arg, 1, 1);
 	    }
 	    $args[$argcnt] =
@@ -405,12 +405,9 @@ sub create_tcl_sub {
     }
     return $tclname;
 }
-sub EV {
-    my @events = @_;
-    return bless \@events, "Tcl::EV";
-}
 sub Ev {
-    die "Tcl::Ev no longer supported, use Tcl::EV in callback creation instead\n";
+    my @events = @_;
+    return bless \@events, "Tcl::Ev";
 }
 
 
