@@ -150,7 +150,6 @@ TclObjFromSv(pTHX_ SV *sv)
 	mg_get(sv);
     
     if (SvROK(sv) && !SvOBJECT(SvRV(sv)) && (SvTYPE(SvRV(sv)) == SVt_PVAV)) {
-	/* XXX: Should we add '&& !SvOBJECT(SvRV(sv))' above? */
 	/*
 	 * Recurse into ARRAYs, turning them into Tcl list Objs
 	 */
