@@ -1,3 +1,13 @@
+2004-04-17  Vadim Konovalov  <vkonovalov@peterstar.ru>
+
+	* Makefile.PL: fix WinCE case, check if Tcl version supported
+	* README: change WinCE explanations; add authors; change file
+	format to be more consistent with other modules
+	* Tcl.pm: change version to 0.76 for CPAN release; make AUTHORS
+	section more complete.
+	* Changes: brief summary of changes between 0.75 and 0.76
+	* t/info.t: should ignore difference between '/' and '\' on Win32.
+	
 2004-04-16  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* t/info.t: return -longname of nameofexe on Windows to match $^X.
