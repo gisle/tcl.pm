@@ -261,6 +261,7 @@ and I<vice versa>.
 Malcolm Beattie, mbeattie@sable.ox.ac.uk, 23 Oct 1994.
 Vadim Konovalov, vkonovalov@peterstar.ru, 19 May 2003.
 Jeff Hobbs, jeff (a) activestate . com, 22 Mar 2004.
+Gisle Aas, gisle (a) activestate . com, 14 Apr 2004.
 
 =head1 COPYRIGHT
 
