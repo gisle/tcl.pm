@@ -1,3 +1,7 @@
+2004-11-12  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (NpInitialize): support HP-UX shl_* functions.
+
 2004-09-13  Vadim Konovalov <vadim@vkonovalov.ru>
 
 	* Tcl.pm: version 0.84

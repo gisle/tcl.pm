@@ -42,6 +42,8 @@
 #ifndef TCL_LIB_FILE
 # ifdef WIN32
 #   define TCL_LIB_FILE "tcl84.dll"
+# elif defined(__hpux)
+#   define TCL_LIB_FILE "libtcl8.4.sl"
 # else
 #   define TCL_LIB_FILE "libtcl8.4.so"
 # endif
@@ -63,14 +65,30 @@ static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
 #include <windows.h>
 #undef WIN32_LEAN_AND_MEAN
 #define dlopen(libname, flags)	LoadLibrary(libname)
-#define dlsym(handle, symbol)	GetProcAddress((HINSTANCE) handle, symbol)
 #define dlclose(path)		((void *) FreeLibrary((HMODULE) path))
+#define DLSYM(handle, symbol, type, proc) \
+	(proc = (type) GetProcAddress((HINSTANCE) handle, symbol))
 #define snprintf _snprintf
 
 #else
 
+#ifdef __hpux
+/* HPUX requires shl_* routines */
+#include <dl.h>
+#define HMODULE shl_t
+#define dlopen(libname, flags)	shl_load(libname, \
+	BIND_DEFERRED|BIND_VERBOSE|DYNAMIC_PATH, 0L)
+#define dlclose(path)		shl_unload((shl_t) path)
+#define DLSYM(handle, symbol, type, proc) \
+	if (shl_findsym(&handle, symbol, (short) TYPE_PROCEDURE, \
+		(void *) &proc) != 0) { proc = NULL; }
+#else
 #include <dlfcn.h>
 #define HMODULE void *
+#define DLSYM(handle, symbol, type, proc) \
+	(proc = (type) dlsym(handle, symbol))
+#endif
+
 #ifndef MAX_PATH
 #define MAX_PATH 1024
 #endif
@@ -158,8 +176,7 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	if (handle) {
 	    memcpy(libname, envdll, MAX_PATH);
 	} else {
-	    warn("NpLoadLibrary: could not find PERL_TCL_DLL Tcl dll: '%s'",
-		    envdll);
+	    warn("NpLoadLibrary: could not find PERL_TCL_DLL at '%s'", envdll);
 	    return TCL_ERROR;
 	}
     }
@@ -297,8 +314,7 @@ NpInitialize(pTHX_ SV *X)
 	/*
 	 * First see if some other part didn't already load Tcl.
 	 */
-	createInterp = (Tcl_Interp * (*)()) dlsym(tclHandle,
-		"Tcl_CreateInterp");
+	DLSYM(tclHandle, "Tcl_CreateInterp", Tcl_Interp * (*)(), createInterp);
 
 	if (createInterp == NULL) {
 	    if (NpLoadLibrary(aTHX_ &tclHandle, dllFilename, MAX_PATH)
@@ -308,10 +324,9 @@ NpInitialize(pTHX_ SV *X)
 	    }
 	}
 
-	createInterp = (Tcl_Interp * (*)()) dlsym(tclHandle,
-		"Tcl_CreateInterp");
+	DLSYM(tclHandle, "Tcl_CreateInterp", Tcl_Interp * (*)(), createInterp);
 	if (createInterp == NULL) {
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__hpux)
 	    char *error = dlerror();
 	    if (error != NULL) {
 		warn(error);
@@ -319,11 +334,11 @@ NpInitialize(pTHX_ SV *X)
 #endif
 	    return TCL_ERROR;
 	}
-	findExecutable = (void (*)(char *)) dlsym(tclHandle,
-		"Tcl_FindExecutable");
+	DLSYM(tclHandle, "Tcl_FindExecutable", void (*)(char *),
+		findExecutable);
 
-	tclKit_AppInit = (int (*)(Tcl_Interp *)) dlsym(tclHandle,
-		"TclKit_AppInit");
+	DLSYM(tclHandle, "TclKit_AppInit", int (*)(Tcl_Interp *),
+		tclKit_AppInit);
     }
 #else
     createInterp   = Tcl_CreateInterp;
@@ -366,21 +381,26 @@ NpInitialize(pTHX_ SV *X)
     } else {
 	char * (* tclKit_SetKitPath)(char *) = NULL;
 	/*
-	 * We need to see if this has TclKit_SetKitPath
+	 * We need to see if this has TclKit_SetKitPath.  This is in
+	 * special base kit dlls that have embedded data in the dll.
 	 */
-	if ((dllFilename[0] != '\0')
-		&& (tclKit_SetKitPath = (char * (*)(char *)) dlsym(tclHandle,
-			    "TclKit_SetKitPath")) != NULL) {
-	    /*
-	     * XXX: Need to figure out how to populate dllFilename if
-	     * NpLoadLibrary didn't do it for us on Unix.
-	     */
-	    tclKit_SetKitPath(dllFilename);
+	if (dllFilename[0] != '\0') {
+	    DLSYM(tclHandle, "TclKit_SetKitPath", char * (*)(char *),
+		    tclKit_SetKitPath);
+	    if (tclKit_SetKitPath != NULL) {
+		/*
+		 * XXX: Need to figure out how to populate dllFilename if
+		 * NpLoadLibrary didn't do it for us on Unix.
+		 */
+		tclKit_SetKitPath(dllFilename);
+	    }
 	}
     }
     if (tclKit_AppInit(g_Interp) != TCL_OK) {
 	CONST84 char *msg = Tcl_GetVar(g_Interp, "errorInfo", TCL_GLOBAL_ONLY);
-	warn("Failed to initialize Tcl:\n%s", msg);
+	warn("Failed to initialize Tcl with %s:\n%s",
+		(tclKit_AppInit == Tcl_Init) ? "Tcl_Init" : "TclKit_AppInit",
+		msg);
 	return TCL_ERROR;
     }
 
