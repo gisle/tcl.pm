@@ -7,6 +7,8 @@
 	* Tcl.xs: Introduce class Tcl::List when a list is returned in scalar
 	context.  It works as before it is used as an array refence, but will
 	also stringify properly.
+	* Tcl.pm: Set up stringify overload of Tcl::List
+	* t/call.t: Test Tcl::List.
 
 2004-05-10  Jeff Hobbs  <jeffh@ActiveState.com>
 
