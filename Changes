@@ -1,5 +1,12 @@
 Revision history for Perl extension Tcl.
 
+0.80    03-may-2004
+	- many Tcl.xs improvements from Jeff Hobbs, Gisle Aas (better
+	  handling for numbers, Unicode)
+	- changes for event variables and in Tcl::Ev
+	- ::perl::Eval proc in Tcl to eval in Perl
+	- references to Perl objects now created in Tcl in ::perl namespace
+
 0.77    17-apr-2004
 	- quick fix of 1=>1.0 problem
 	- add wcall wrapper to Tcl.pm
