@@ -1,3 +1,8 @@
+2004-04-20  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (TclObjFromSv): check for IV == NV in SvNOK to account
+	for some perl versions' overaggressiveness in promoting ints.
+
 2004-04-17  Vadim Konovalov  <vkonovalov@peterstar.ru>
 
 	* Tcl.pm (call): add hack to prevent 1=>1.0

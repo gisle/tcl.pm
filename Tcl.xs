@@ -183,7 +183,17 @@ TclObjFromSv(pTHX_ SV *sv)
 	objPtr = Tcl_NewStringObj(str, length);
     }
     else if (SvNOK(sv)) {
-	objPtr = Tcl_NewDoubleObj(SvNV(sv));
+	double dval = SvNV(sv);
+	int ival;
+	/*
+	 * Account for some perl versions aggressive NOK-ness where
+	 * an int was all that was intented.
+	 */
+	if (SvIOK(sv) && ((double)(ival = SvIV(sv)) == dval)) {
+	    objPtr = Tcl_NewIntObj(ival);
+	} else {
+	    objPtr = Tcl_NewDoubleObj(dval);
+	}
     }
     else if (SvIOK(sv)) {
 	objPtr = Tcl_NewIntObj(SvIV(sv));
