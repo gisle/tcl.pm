@@ -1,3 +1,17 @@
+2004-04-12  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs: #define PERL_NO_GET_CONTEXT and pass perl context
+	through internal funcs.
+	(SvFromTclObj): add possible Tcl_ListObj -> SV conversion.  This
+	needs further examination as it forces coding changes and is not
+	yet used.
+	(TclObjFromSv): change to return Tcl_Objs with refcount 0 and
+	manage refcount from caller.  This corrects the recursive refcount
+	getting too high (caused objects not to be freed when done).
+
+	* Tcl.pm (listify): add more comments about usage and add
+	backslash correcting.
+
 2004-04-09  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Makefile.PL: add the ability to control what tclsh we build with

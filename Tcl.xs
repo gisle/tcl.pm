@@ -10,9 +10,14 @@
  * RCS: @(#) $Id$
  */
 
+#define PERL_NO_GET_CONTEXT     /* we want efficiency */
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+
+#ifndef DEBUG_REFCOUNTS
+#define DEBUG_REFCOUNTS 0
+#endif
 
 /*
  * Until we update for 8.4 CONST-ness
@@ -47,6 +52,25 @@ static Tcl_ObjType *tclListTypePtr = NULL;
 static Tcl_ObjType *tclStringTypePtr = NULL;
 static Tcl_ObjType *tclWideIntTypePtr = NULL;
 
+#if DEBUG_REFCOUNTS
+static void
+check_refcounts(Tcl_Obj *objPtr) {
+    int rc = objPtr->refCount;
+    if (rc != 1) {
+	fprintf(stderr, "objPtr %p refcount %d\n", objPtr, rc); fflush(stderr);
+    }
+    if (objPtr->typePtr == tclListTypePtr) {
+	int objc, i;
+	Tcl_Obj **objv;
+
+	Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv);
+	for (i = 0; i < objc; i++) {
+	    check_refcounts(objv[i]);
+	}
+    }
+}
+#endif
+
 static int
 has_highbit(CONST char *s,int l)
 {
@@ -59,13 +83,14 @@ has_highbit(CONST char *s,int l)
 }
 
 static SV *
-SvFromTclObj(Tcl_Obj *objPtr)
+SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 {
     SV *sv;
     int len;
     char *str;
 
     if (objPtr == NULL) {
+	/* or return newSV(0); ?? */
 	return &PL_sv_undef;
     }
     if (objPtr->typePtr == tclIntTypePtr) {
@@ -81,9 +106,29 @@ SvFromTclObj(Tcl_Obj *objPtr)
 	str = Tcl_GetByteArrayFromObj(objPtr, &len);
 	sv = newSVpvn(str, len);
     }
+#if 0
+    else if (objPtr->typePtr == tclListTypePtr) {
+	/*
+	 * tclListTypePtr should become an AV.
+	 * This code needs to reconcile with G_ context in prepare_Tcl_result
+	 * and user's expectations of how data will be passed in.  The key is
+	 * that a stringified-list and pure-list should be operable in the
+	 * same way in Perl.
+	 */
+	int objc, i;
+	Tcl_Obj **objv;
+	AV *av = newAV();
+
+	Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv);
+	for (i = 0; i < objc; i++) {
+	    av_push(av, SvFromTclObj(aTHX_ objv[i]));
+	}
+	//sv = (SV *) av;
+	sv = newRV_noinc((SV *) av);
+    }
+#endif
     /* tclStringTypePtr is true unicode */
     /* tclWideIntTypePtr is 64-bit int */
-    /* tclListTypePtr should become an AV */
     else {
 	str = Tcl_GetStringFromObj(objPtr, &len);
 	sv = newSVpvn(str, len);
@@ -97,10 +142,11 @@ SvFromTclObj(Tcl_Obj *objPtr)
 
 /*
  * Create a Tcl_Obj from a Perl SV.
- * Return Tcl_Obj with refcount = 1.
+ * Return Tcl_Obj with refcount = 0.  Caller should call Tcl_IncrRefCount
+ * or pass of to function that does (manage object lifetime).
  */
 static Tcl_Obj *
-TclObjFromSv(SV *sv)
+TclObjFromSv(pTHX_ SV *sv)
 {
     Tcl_Obj *objPtr = NULL;
 
@@ -132,7 +178,7 @@ TclObjFromSv(SV *sv)
 		    abort();
 		}
 		Tcl_ListObjAppendElement(NULL, objPtr,
-			TclObjFromSv(sv_mortalcopy(*svp)));
+			TclObjFromSv(aTHX_ sv_mortalcopy(*svp)));
 	    }
 	}
     }
@@ -157,13 +203,13 @@ TclObjFromSv(SV *sv)
 	objPtr = Tcl_NewStringObj(str, length);
     }
 
-    Tcl_IncrRefCount(objPtr);
     return objPtr;
 }
 
 int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
 	int objc, Tcl_Obj *CONST objv[])
 {
+    dTHX; /* fetch context */
     dSP;
     AV *av = (AV *) clientData;
     I32 count;
@@ -186,7 +232,7 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
     PUSHs(sv_mortalcopy(*av_fetch(av, 1, FALSE)));
     PUSHs(sv_mortalcopy(*av_fetch(av, 2, FALSE)));
     while (objc--) {
-	PUSHs(sv_2mortal(SvFromTclObj(*objv++)));
+	PUSHs(sv_2mortal(SvFromTclObj(aTHX_ *objv++)));
     }
     PUTBACK;
     count = perl_call_sv(*av_fetch(av, 0, FALSE), G_EVAL|G_SCALAR);
@@ -205,9 +251,9 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
 	sv = POPs; /* pop the undef off the stack */
 
 	if (SvOK(sv)) {
-	    Tcl_Obj *objPtr = TclObjFromSv(sv);
+	    Tcl_Obj *objPtr = TclObjFromSv(aTHX_ sv);
+	    /* Tcl_SetObjResult will incr refcount */
 	    Tcl_SetObjResult(interp, objPtr);
-	    Tcl_DecrRefCount(objPtr);
 	}
 	rc = TCL_OK;
     }
@@ -226,6 +272,7 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
 void
 Tcl_PerlCallDeleteProc(ClientData clientData)
 {
+    dTHX; /* fetch context */
     AV *av = (AV *) clientData;
     
     /*
@@ -250,9 +297,7 @@ Tcl_PerlCallDeleteProc(ClientData clientData)
 }
 
 void
-prepare_Tcl_result(interp, caller)
-Tcl interp;
-char *caller;
+prepare_Tcl_result(pTHX_ Tcl interp, char *caller)
 {
     dSP;
     Tcl_Obj *objPtr, **objv;
@@ -266,7 +311,7 @@ char *caller;
 	 * This checks Tcl_Obj type.  XPUSH not needed because we
 	 * are called when there is enough space on the stack.
 	 */
-	PUSHs(sv_2mortal(SvFromTclObj(objPtr)));
+	PUSHs(sv_2mortal(SvFromTclObj(aTHX_ objPtr)));
     }
     else if (gimme == G_ARRAY) {
 	if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv)
@@ -280,7 +325,7 @@ char *caller;
 		/*
 		 * This checks Tcl_Obj type
 		 */
-		PUSHs(sv_2mortal(SvFromTclObj(objv[i])));
+		PUSHs(sv_2mortal(SvFromTclObj(aTHX_ objv[i])));
 	    }
 	}
     }
@@ -295,6 +340,8 @@ char *
 var_trace(ClientData clientData, Tcl_Interp *interp,
 	char *name1, char *name2, int flags)
 {
+    dTHX; /* fetch context */
+
     if (flags & TCL_TRACE_READS) {
         warn("TCL_TRACE_READS\n");
     }
@@ -336,7 +383,7 @@ Tcl_Eval(interp, script)
 	if (Tcl_EvalEx(interp, cscript, length, 0) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
-	prepare_Tcl_result(interp, "Tcl::Eval");
+	prepare_Tcl_result(aTHX_ interp, "Tcl::Eval");
 	SPAGAIN;
 
 void
@@ -351,7 +398,7 @@ Tcl_EvalFile(interp, filename)
 	if (Tcl_EvalFile(interp, filename) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
-	prepare_Tcl_result(interp, "Tcl::EvalFile");
+	prepare_Tcl_result(aTHX_ interp, "Tcl::EvalFile");
 	SPAGAIN;
 
 void
@@ -370,7 +417,7 @@ Tcl_GlobalEval(interp, script)
 	if (Tcl_EvalEx(interp, cscript, length, TCL_EVAL_GLOBAL) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
-	prepare_Tcl_result(interp, "Tcl::GlobalEval");
+	prepare_Tcl_result(aTHX_ interp, "Tcl::GlobalEval");
 	SPAGAIN;
 
 void
@@ -398,7 +445,7 @@ Tcl_EvalFileHandle(interp, handle)
 	}
 	if (append)
 	    croak("unexpected end of file in Tcl::EvalFileHandle");
-	prepare_Tcl_result(interp, "Tcl::EvalFileHandle");
+	prepare_Tcl_result(aTHX_ interp, "Tcl::EvalFileHandle");
 	SPAGAIN;
 
 #if 1
@@ -447,13 +494,14 @@ Tcl_icall(interp, sv, ...)
 		 */
 		objv[0] = Tcl_NewStringObj(cmdName, length);
 		Tcl_IncrRefCount(objv[0]);
-		for (i = 1;  i < objc;  i++) {
+		for (i = 1; i < objc; i++) {
 		    /*
 		     * Use efficient Sv to Tcl_Obj conversion.
 		     * This returns Tcl_Obj with refcount 1.
 		     * This can cause recursive calls if we have tied vars.
 		     */
-		    objv[i] = TclObjFromSv(sv_mortalcopy(ST(i+1)));
+		    objv[i] = TclObjFromSv(aTHX_ sv_mortalcopy(ST(i+1)));
+		    Tcl_IncrRefCount(objv[i]);
 		}
 		SP -= items;
 		PUTBACK;
@@ -462,6 +510,9 @@ Tcl_icall(interp, sv, ...)
 		 * Result interp result and invoke the command's object-based
 		 * Tcl_ObjCmdProc.
 		 */
+#if DEBUG_REFCOUNTS
+		for (i = 1; i < objc; i++) { check_refcounts(objv[i]); }
+#endif
 		Tcl_ResetResult(interp);
 		result = (*cmdinfo.objProc)(cmdinfo.objClientData, interp,
 			objc, objv);
@@ -491,7 +542,8 @@ Tcl_icall(interp, sv, ...)
 		     * ensure that we are listify-ing correctly.
 		     * This can cause recursive calls if we have tied vars.
 		     */
-		    objv[i] = TclObjFromSv(sv_mortalcopy(ST(i+1)));
+		    objv[i] = TclObjFromSv(aTHX_ sv_mortalcopy(ST(i+1)));
+		    Tcl_IncrRefCount(objv[i]);
 		    argv[i] = Tcl_GetString(objv[i]);
 		}
 		SP -= items;
@@ -501,6 +553,9 @@ Tcl_icall(interp, sv, ...)
 		 * Result interp result and invoke the command's string-based
 		 * procedure.
 		 */
+#if DEBUG_REFCOUNTS
+		for (i = 1; i < objc; i++) { check_refcounts(objv[i]); }
+#endif
 		Tcl_ResetResult(interp);
 		result = (*cmdinfo.proc)(cmdinfo.clientData, interp,
 			objc, argv);
@@ -520,7 +575,7 @@ Tcl_icall(interp, sv, ...)
 	    if (result != TCL_OK) {
 		croak(Tcl_GetStringResult(interp));
 	    }
-	    prepare_Tcl_result(interp, "Tcl::call");
+	    prepare_Tcl_result(aTHX_ interp, "Tcl::call");
 
 	    if (objv != baseobjv) {
 		Safefree(objv);
@@ -560,7 +615,8 @@ Tcl_icall(interp, sv, ...)
 		 * This returns Tcl_Obj with refcount 1.
 		 * This can cause recursive calls if we have tied vars.
 		 */
-		objv[i] = TclObjFromSv(sv_mortalcopy(ST(i+1)));
+		objv[i] = TclObjFromSv(aTHX_ sv_mortalcopy(ST(i+1)));
+		Tcl_IncrRefCount(objv[i]);
 	    }
 	    SP -= items;
 	    PUTBACK;
@@ -569,6 +625,9 @@ Tcl_icall(interp, sv, ...)
 	     * Reset current result and invoke using Tcl_EvalObjv.
 	     * This will trigger command traces and handle async signals.
 	     */
+#if DEBUG_REFCOUNTS
+	    for (i = 1;  i < objc;  i++) { check_refcounts(objv[i]); }
+#endif
 	    Tcl_ResetResult(interp);
 	    result = Tcl_EvalObjv(interp, objc, objv, 0);
 
@@ -582,7 +641,7 @@ Tcl_icall(interp, sv, ...)
 	    if (result != TCL_OK) {
 		croak(Tcl_GetStringResult(interp));
 	    }
-	    prepare_Tcl_result(interp, "Tcl::call");
+	    prepare_Tcl_result(aTHX_ interp, "Tcl::call");
 
 	    if (objv != baseobjv) {
 		Safefree(objv);
@@ -649,9 +708,9 @@ Tcl_SetResult(interp, sv)
 	SV *	sv
     CODE:
 	{
-	    Tcl_Obj *objPtr = TclObjFromSv(sv);
+	    Tcl_Obj *objPtr = TclObjFromSv(aTHX_ sv);
+	    /* Tcl_SetObjResult will incr refcount */
 	    Tcl_SetObjResult(interp, objPtr);
-	    Tcl_DecrRefCount(objPtr);
 	    ST(0) = ST(1);
 	    XSRETURN(1);
 	}
@@ -731,7 +790,7 @@ Tcl_GetVar(interp, varname, flags = 0)
 	char *	varname
 	int	flags
     CODE:
-	RETVAL = SvFromTclObj(Tcl_GetVar2Ex(interp, varname, NULL, flags));
+	RETVAL = SvFromTclObj(aTHX_ Tcl_GetVar2Ex(interp, varname, NULL, flags));
     OUTPUT:
 	RETVAL
 
@@ -742,7 +801,7 @@ Tcl_GetVar2(interp, varname1, varname2, flags = 0)
 	char *	varname2
 	int	flags
     CODE:
-	RETVAL = SvFromTclObj(Tcl_GetVar2Ex(interp, varname1, varname2, flags));
+	RETVAL = SvFromTclObj(aTHX_ Tcl_GetVar2Ex(interp, varname1, varname2, flags));
     OUTPUT:
 	RETVAL
 
@@ -837,7 +896,7 @@ FETCH(av, key = NULL)
 	    flags = (int) SvIV(*av_fetch(av, 2, FALSE));
 	}
 	varname1 = SvPV_nolen(*av_fetch(av, 1, FALSE));
-	RETVAL = SvFromTclObj(Tcl_GetVar2Ex(interp, varname1, key, flags));
+	RETVAL = SvFromTclObj(aTHX_ Tcl_GetVar2Ex(interp, varname1, key, flags));
     OUTPUT:
 	RETVAL
 
@@ -872,14 +931,14 @@ STORE(av, sv1, sv2 = NULL)
 	/*
 	 * HASH:   sv1 == key,   sv2 == value
 	 * SCALAR: sv1 == value, sv2 NULL
+	 * Tcl_SetVar2Ex will incr refcount
 	 */
 	if (sv2) {
-	    objPtr = TclObjFromSv(sv2);
+	    objPtr = TclObjFromSv(aTHX_ sv2);
 	    Tcl_SetVar2Ex(interp, varname1, SvPV_nolen(sv1), objPtr, flags);
 	}
 	else {
-	    objPtr = TclObjFromSv(sv1);
+	    objPtr = TclObjFromSv(aTHX_ sv1);
 	    Tcl_SetVar2Ex(interp, varname1, NULL, objPtr, flags);
 	}
-	Tcl_DecrRefCount(objPtr);
 
