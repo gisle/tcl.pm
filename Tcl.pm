@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.75';
+$Tcl::VERSION = '0.76';
 
 =head1 NAME
 
@@ -302,15 +302,9 @@ sub LINK_READ_ONLY ()	{ 0x80 }
 
 bootstrap Tcl;
 
-#TODO make better wording here
-# %anon_refs keeps track of anonymous subroutines that were created with
-# "CreateComand" method during process of transformation of arguments for
-# "call" and other stuff such as scalar refs and so on.
-# (TODO -- find out how to check for refcounting and proper releasing of
-# resources)
-
-my %anon_refs;
-
+# This is a crude list-creating routine.  'icall' convert perl array
+# refs into Tcl list objects efficiently, so this isn't necessary.
+# It is also not "comprehensive", so should be used as a last resort.
 sub listify {
     my $res;
     for my $arg (@_) {
@@ -323,11 +317,21 @@ sub listify {
 	    $res .= "{" . listify(@$arg) . "}";
 	}
 	else {
+	    $arg =~ s/\\/\\\\/g;
 	    $res .= $arg;
 	}
     }
-    $res;
+    return $res;
 }
+
+#TODO make better wording here
+# %anon_refs keeps track of anonymous subroutines that were created with
+# "CreateComand" method during process of transformation of arguments for
+# "call" and other stuff such as scalar refs and so on.
+# (TODO -- find out how to check for refcounting and proper releasing of
+# resources)
+
+my %anon_refs;
 
 # subroutine "call" checks for its parameters, adopts them and calls "icall"
 # method which implemented in Tcl.xs file and does essential work
