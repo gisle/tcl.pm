@@ -1,5 +1,13 @@
 2004-04-09  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* Makefile.PL: add the ability to control what tclsh we build with
+	* tclcfg.tcl:  by passing --tclsh (path to tclsh to use when
+	calling tclcfg.tcl), --tclconfig (path to tclConfig.sh to get data
+	from) and --buildspec (use BUILD spec info in conjunction with
+	--tclconfig).
+
+	* Tcl.pm (FETCH, STORE): add perl versions for reference (not used)
+
 	* Tcl.xs (SvFromTclObj): if objPtr == NULL, return &PL_sv_undef.
 	(TclObjFromSv): Add SvGMAGICAL check and check that RV is not an
 	object.  Remove one impotent cycle check and add empty array elem
