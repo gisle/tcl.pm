@@ -35,8 +35,6 @@
 typedef Tcl_Interp *Tcl;
 typedef AV *Tcl__Var;
 
-static int findexecutable_called = 0;
-
 /*
  * Variables denoting the Tcl object types defined in the core.
  */
@@ -361,24 +359,7 @@ Tcl
 Tcl_new(class = "Tcl")
 	char *	class
     CODE:
-    	if (!findexecutable_called) {
-	    /*
-	     * XXX TODO (?) place here $^X ?
-	     * Ideally this would be passed the dll instance location.
-	     */
-	    Tcl_FindExecutable(NULL);
-	    findexecutable_called = 1;
-	}
 	RETVAL = Tcl_CreateInterp();
-	if (tclBooleanTypePtr == NULL) {
-	    tclBooleanTypePtr   = Tcl_GetObjType("boolean");
-	    tclByteArrayTypePtr = Tcl_GetObjType("bytearray");
-	    tclDoubleTypePtr    = Tcl_GetObjType("double");
-	    tclIntTypePtr       = Tcl_GetObjType("int");
-	    tclListTypePtr      = Tcl_GetObjType("list");
-	    tclStringTypePtr    = Tcl_GetObjType("string");
-	    tclWideIntTypePtr   = Tcl_GetObjType("wideInt");
-	}
     OUTPUT:
 	RETVAL
 
@@ -736,14 +717,6 @@ void
 Tcl_ResetResult(interp)
 	Tcl	interp
 
-void
-Tcl_FindExecutable(argv)
-	char *	argv
-    CODE:
-    	Tcl_FindExecutable(argv);
-	findexecutable_called = 1;
-
-
 char *
 Tcl_AppendResult(interp, ...)
 	Tcl	interp
@@ -954,3 +927,19 @@ STORE(av, sv1, sv2 = NULL)
 	    Tcl_SetVar2Ex(interp, varname1, NULL, objPtr, flags);
 	}
 
+MODULE = Tcl	PACKAGE = Tcl
+
+BOOT:
+    /*
+     * XXX TODO (?) place here $^X ?
+     * Ideally this would be passed the dll instance location.
+     */
+    Tcl_FindExecutable(NULL);
+
+    tclBooleanTypePtr   = Tcl_GetObjType("boolean");
+    tclByteArrayTypePtr = Tcl_GetObjType("bytearray");
+    tclDoubleTypePtr    = Tcl_GetObjType("double");
+    tclIntTypePtr       = Tcl_GetObjType("int");
+    tclListTypePtr      = Tcl_GetObjType("list");
+    tclStringTypePtr    = Tcl_GetObjType("string");
+    tclWideIntTypePtr   = Tcl_GetObjType("wideInt");
