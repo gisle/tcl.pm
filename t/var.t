@@ -40,9 +40,7 @@ print "$ok $five\n";
 print defined($i->GetVar("nonesuch")) ? "not ok 6\n" : "ok 6\n";
 
 # some Unicode tests
-if ($]>=5.006 && $i->GetVar("tcl_version")>=8.1
-  && $]<5.008 # TODO -- MUST be implemented and succeed for 5.8.x as well!
-  ) {
+if ($]>=5.006 && $i->GetVar("tcl_version")>=8.1) {
     $i->SetVar("univar","\x{abcd}\x{1234}");
     if ($i->GetVar("univar") ne "\x{abcd}\x{1234}") {
 	print "not ";
@@ -55,9 +53,10 @@ if ($]>=5.006 && $i->GetVar("tcl_version")>=8.1
 	print "not ";
     }
     print "ok 8 # Unicode persistence for tied variable\n";
-    print $r;
+    binmode(STDOUT, ":utf8") if $] >= 5.008;
+    print "# $r\n";
 }
 else {
-    for (7..8) {print "ok $_  # not Unicode-aware Perl or Tcl\n";}
+    for (7..8) {print "ok $_  # skipped: not Unicode-aware Perl or Tcl\n";}
 }
 
