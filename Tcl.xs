@@ -944,3 +944,31 @@ BOOT:
     tclListTypePtr      = Tcl_GetObjType("list");
     tclStringTypePtr    = Tcl_GetObjType("string");
     tclWideIntTypePtr   = Tcl_GetObjType("wideInt");
+
+    /* set up constant subs */
+    {
+	HV *stash = gv_stashpvn("Tcl", 3, TRUE);
+	newCONSTSUB(stash, "OK",               newSViv(TCL_OK));
+	newCONSTSUB(stash, "ERROR",            newSViv(TCL_ERROR));
+	newCONSTSUB(stash, "RETURN",           newSViv(TCL_RETURN));
+	newCONSTSUB(stash, "BREAK",            newSViv(TCL_BREAK));
+	newCONSTSUB(stash, "CONTINUE",         newSViv(TCL_CONTINUE));
+
+	newCONSTSUB(stash, "GLOBAL_ONLY",      newSViv(TCL_GLOBAL_ONLY));
+	newCONSTSUB(stash, "NAMESPACE_ONLY",   newSViv(TCL_NAMESPACE_ONLY));
+	newCONSTSUB(stash, "APPEND_VALUE",     newSViv(TCL_APPEND_VALUE));
+	newCONSTSUB(stash, "LIST_ELEMENT",     newSViv(TCL_LIST_ELEMENT));
+	newCONSTSUB(stash, "TRACE_READS",      newSViv(TCL_TRACE_READS));
+	newCONSTSUB(stash, "TRACE_WRITES",     newSViv(TCL_TRACE_WRITES));
+	newCONSTSUB(stash, "TRACE_UNSETS",     newSViv(TCL_TRACE_UNSETS));
+	newCONSTSUB(stash, "TRACE_DESTROYED",  newSViv(TCL_TRACE_DESTROYED));
+	newCONSTSUB(stash, "INTERP_DESTROYED", newSViv(TCL_INTERP_DESTROYED));
+	newCONSTSUB(stash, "LEAVE_ERR_MSG",    newSViv(TCL_LEAVE_ERR_MSG));
+	newCONSTSUB(stash, "TRACE_ARRAY",      newSViv(TCL_TRACE_ARRAY));
+
+	newCONSTSUB(stash, "LINK_INT",         newSViv(TCL_LINK_INT));
+	newCONSTSUB(stash, "LINK_DOUBLE",      newSViv(TCL_LINK_DOUBLE));
+	newCONSTSUB(stash, "LINK_BOOLEAN",     newSViv(TCL_LINK_BOOLEAN));
+	newCONSTSUB(stash, "LINK_STRING",      newSViv(TCL_LINK_STRING));
+	newCONSTSUB(stash, "LINK_READ_ONLY",   newSViv(TCL_LINK_READ_ONLY));
+    }

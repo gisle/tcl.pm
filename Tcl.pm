@@ -278,28 +278,6 @@ unless (defined $Tcl::Tk::VERSION) {
 use vars qw(@ISA);
 @ISA = qw(DynaLoader Tcl::Tk);
 
-sub OK ()	{ 0 }
-sub ERROR ()	{ 1 }
-sub RETURN ()	{ 2 }
-sub BREAK ()	{ 3 }
-sub CONTINUE ()	{ 4 }
-
-sub GLOBAL_ONLY ()	{ 1 }
-sub APPEND_VALUE ()	{ 2 }
-sub LIST_ELEMENT ()	{ 4 }
-sub TRACE_READS ()	{ 0x10 }
-sub TRACE_WRITES ()	{ 0x20 }
-sub TRACE_UNSETS ()	{ 0x40 }
-sub TRACE_DESTROYED ()	{ 0x80 }
-sub INTERP_DESTROYED ()	{ 0x100 }
-sub LEAVE_ERR_MSG ()	{ 0x200 }
-
-sub LINK_INT ()		{ 1 }
-sub LINK_DOUBLE ()	{ 2 }
-sub LINK_BOOLEAN ()	{ 3 }
-sub LINK_STRING ()	{ 4 }
-sub LINK_READ_ONLY ()	{ 0x80 }
-
 Tcl->bootstrap($Tcl::VERSION);
 
 #TODO make better wording here
