@@ -1,3 +1,7 @@
+2004-06-01  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (NpLoadLibrary): minor code cleanup
+
 2004-05-31  Gisle Aas  <gisle@ActiveState.com>
 
 	* Tcl.pm: Introduce global variable $Tcl::STACK_TRACE.  Setting this

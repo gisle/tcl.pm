@@ -145,7 +145,7 @@ static HV *hvInterps = NULL;
 static int
 NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 {
-    char *pos, *envdll, libname[MAX_PATH];
+    char *envdll, libname[MAX_PATH];
     HMODULE handle = (HMODULE) NULL;
 
     /*
@@ -155,15 +155,13 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
     if (envdll != NULL) {
 	handle = dlopen(envdll, RTLD_NOW | RTLD_GLOBAL);
 	if (handle) {
-	    *tclHandle = handle;
-	    if (dllFilenameSize > 0) {
-		memcpy(dllFilename, envdll, dllFilenameSize);
-	    }
-	    return TCL_OK;
+	    memcpy(libname, envdll, MAX_PATH);
 	}
     }
 
     if (!handle) {
+	char *pos;
+
 	if (strlen(TCL_LIB_FILE) < 3) {
 	    warn("Invalid base Tcl library filename provided: '%s'",
 		    TCL_LIB_FILE);
