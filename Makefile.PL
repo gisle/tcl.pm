@@ -19,7 +19,6 @@ my $wince;
 GetOptions("tclsh=s", \$tclsh,
 	   "tclconfig=s", \$tclconfig,
 	   "buildspec", \$buildspec,
-	   "wince", \$wince,
 	  )
     || die <<EOT;
 
@@ -28,12 +27,13 @@ Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>]
 
 or for WinCE cross-compilation:
 
-       perl -MCross=[your-cross-name] Makefile.PL --wince PERL_CORE=1
+       perl -MCross=[your-cross-name] Makefile.PL PERL_CORE=1
              PERL_SRC=[your-perl-distribution-for-wince-crosscompiling]
 
 EOT
 
-if ($wince) {
+
+if (defined $Cross::platform) {
     # All appropriate environment variables shoult be set properly, such
     # as OSVERSION, PLATFORM, WCEROOT, SDKROOT. This is usually done with
     # appropriate 'bat' file. such as WCEMIPS.BAT
@@ -72,6 +72,13 @@ if ($tclconfig) {
 	($libpath, $incpath) = process_tclconfig($tclcfg{'tclConfig.sh'});
     } else {
 	my $tclver = $tclcfg{tcl_version};
+
+	# currently version must be >8.0
+	my ($vmaj,$vmin) = ($tclver =~ /^(\d+)\.(\d+)/);
+	if ($vmin==0) {
+	    die "Tcl version '$vmaj.$vmin' not supported, must be >8.0";
+	}
+
 	if ($tclcfg{tcl_library} =~ /^(.*)[\\\/]lib[\\\/]/) {
 	    $libpath = "-L$1/lib";
 	    $incpath = "-I$1/include";
