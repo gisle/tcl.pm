@@ -1,5 +1,14 @@
 Revision history for Perl extension Tcl.
 
+0.76    17-apr-2004
+	- many improvements in Tcl.pm, Tcl.xs from Jeff Hobbs
+	- many improvements in Tcl.pm, Tcl.xs from Gisle Aas
+	- more tests by Jeff Hobbs, Gisle Aas
+	- subclassing is more correct with respect to Tcl::Tk module
+	- Makefile.PL and ceMakefile.PL now integrated to one file
+	- General cleaning of code, more comments
+	- Tcl-800 currently not supported, only recent versions
+
 0.75    28-mar-2004, Vadim Konovalov
 	- ARRAY REF are processed in $interp->call(...) for perlTk compat
 	- replace undef with '' in $interp->call(...)
