@@ -348,6 +348,27 @@ sub call {
 		    $arg->[0]->(@_, @$arg[1..$#$arg]);
 		}, $events);
 	}
+	elsif (ref($arg) eq 'REF' and ref($$arg) eq 'SCALAR') {
+	    # this is a very special shortcut: if we see construct like \\"xy"
+	    # then place proper Tcl::Ev(...) for easier access
+	    my $events = [map {"%$_"} split '', $$$arg];
+	    if (ref($args[$argcnt+1]) eq 'ARRAY' && 
+		ref($args[$argcnt+1]->[0]) eq 'CODE') {
+		$arg = $args[$argcnt+1];
+		$args[$argcnt] =
+		    $interp->create_tcl_sub(sub {
+			splice @_, 0, 3; # remove ClientData, Interp and CmdName
+			$arg->[0]->(@_, @$arg[1..$#$arg]);
+		    }, $events);
+	    }
+	    elsif (ref($args[$argcnt+1]) eq 'CODE') {
+		$args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$events);
+	    }
+	    else {
+		warn "not CODE/ARRAY expected after description of event fields";
+	    }
+	    splice @args, $argcnt+1, 1;
+	}
     }
     # Done with special var processing.  The only processing that icall
     # will do with the args is efficient conversion of SV to Tcl_Obj.
