@@ -89,10 +89,14 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
     char *str;
 
     if (objPtr == NULL) {
-	/* or return newSV(0); ?? */
-	sv = &PL_sv_undef;
+	/*
+	 * Use newSV(0) instead of &PL_sv_undef as it may be stored in an AV.
+	 * It also provides symmetry with the other newSV* calls below.
+	 * This SV will also be mortalized later.
+	 */
+	sv = newSV(0);
     }
-    if (objPtr->typePtr == tclIntTypePtr) {
+    else if (objPtr->typePtr == tclIntTypePtr) {
 	sv = newSViv(objPtr->internalRep.longValue);
     }
     else if (objPtr->typePtr == tclDoubleTypePtr) {
