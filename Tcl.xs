@@ -930,11 +930,11 @@ STORE(av, sv1, sv2 = NULL)
 MODULE = Tcl	PACKAGE = Tcl
 
 BOOT:
-    /*
-     * XXX TODO (?) place here $^X ?
-     * Ideally this would be passed the dll instance location.
-     */
-    Tcl_FindExecutable(NULL);
+    {
+	SV *x = GvSV(gv_fetchpv("\030", TRUE, SVt_PV)); /* $^X */
+	/* Ideally this would be passed the dll instance location. */
+	Tcl_FindExecutable(x && SvPOK(x) ? SvPV_nolen(x) : NULL);
+    }
 
     tclBooleanTypePtr   = Tcl_GetObjType("boolean");
     tclByteArrayTypePtr = Tcl_GetObjType("bytearray");

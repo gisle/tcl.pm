@@ -9,6 +9,7 @@ Tcl.pm			Tcl extension module
 Tcl.xs			Tcl extension implementation
 t/createcmd.t		See if command creation works
 t/eval.t		See if Eval-ish things work
+t/info.t	        See if Tcl info command works
 t/result.t		See if Tcl result protocol works
 t/trace.t		See if variable tarcing works
 t/var.t			See if access to/from Tcl variables works
