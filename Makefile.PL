@@ -7,18 +7,52 @@
 
 use strict;
 use Getopt::Long qw(GetOptions);
+use ExtUtils::MakeMaker;
 
 my $tclsh = 'tclsh';
 my $tclconfig;
 my $buildspec;
 my $libpath;
 my $incpath;
+my $wince;
 
 GetOptions("tclsh=s", \$tclsh,
 	   "tclconfig=s", \$tclconfig,
-	   "buildspec", \$buildspec)
-    || die "Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>] " .
-                                   "[--buildspec] [<makemaker opts>...]\n";
+	   "buildspec", \$buildspec,
+	   "wince", \$wince,
+	  )
+    || die <<EOT;
+
+Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>]
+                        [--buildspec] [<makemaker opts>...]
+
+or for WinCE:
+
+       perl -MCross=[your-cross-name] Makefile.PL --wince PERL_CORE=1
+             PERL_SRC=[your-perl-distribution-for-wince-crosscompiling]
+
+EOT
+
+if ($wince) {
+    # All appropriate environment variables shoult be set properly, such
+    # as OSVERSION, PLATFORM, WCEROOT, SDKROOT. This is usually done with
+    # appropriate 'bat' file. such as WCEMIPS.BAT
+    #
+    #
+    # edit following two paths to reflect your situation
+    # when editing please note that there should be tcl84.lib
+    # libraries at "$tcldir\\wince\\$Cross::platform-release"
+    #
+    my $tcldir = 'D:\personal\pocketPC\tcltk\84a2\tcl8.4a2';
+
+    WriteMakefile(
+        NAME => "Tcl",
+        VERSION_FROM => 'Tcl.pm',
+        LIBS => ["-l$tcldir\\wince\\$Cross::platform-release\\tcl84.lib"],
+        INC => "-I$tcldir\\generic",
+    );
+    exit;
+}
 
 if ($tclconfig) {
     die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
@@ -59,7 +93,6 @@ if ($tclconfig) {
 print "LIBS = $libpath\n";
 print "INC  = $incpath\n";
 
-use ExtUtils::MakeMaker;
 #print <<"#EOS";
 WriteMakefile(
     NAME => "Tcl",
