@@ -1,5 +1,8 @@
 2004-04-29  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* Tcl.xs: add a hash of interps created that we can force delete
+	of prior to Tcl_Finalize, ensuring better cleanup.
+
 	* Makefile.PL: Added --usestubs option, which adds DEFINE flags.
 	* Tcl.pm:      Add stubs support to give us version and dll location
 	* Tcl.xs:      independence.  Tcl.xs can handle the loading and

@@ -103,8 +103,11 @@ static Tcl_ObjType *tclWideIntTypePtr = NULL;
  * This tells us whether Tcl is in a "callable" state.  Set to 1 in BOOT
  * and 0 in Tcl__Finalize (END).  Once finalized, we should not make any
  * more calls to Tcl_* APIs.
+ * hvInterps is a hash that records all live interps, so that we can
+ * force their deletion before the finalization.
  */
 static int initialized = 0;
+static HV *hvInterps = NULL;
 
 /*
  * FUNCTIONS
@@ -748,7 +751,15 @@ Tcl_new(class = "Tcl")
 	 * We might consider Tcl_Preserve/Tcl_Release of the interp.
 	 */
 	if (initialized) {
-	    sv_setref_pv(RETVAL, class, (void*)Tcl_CreateInterp());
+	    Tcl interp = Tcl_CreateInterp();
+	    /*
+	     * Add to the global hash of live interps.
+	     */
+	    if (hvInterps) {
+		(void) hv_store(hvInterps, (const char *) &interp,
+			sizeof(Tcl), &PL_sv_undef, 0);
+	    }
+	    sv_setref_pv(RETVAL, class, (void*)interp);
 	}
     OUTPUT:
 	RETVAL
@@ -1060,8 +1071,16 @@ void
 Tcl_DESTROY(interp)
 	Tcl	interp
     CODE:
-	if (!initialized) { return; }
-	Tcl_DeleteInterp(interp);
+	if (initialized) {
+	    Tcl_DeleteInterp(interp);
+	    /*
+	     * Remove from the global hash of live interps.
+	     */
+	    if (hvInterps) {
+		(void) hv_delete(hvInterps, (const char *) interp,
+			sizeof(Tcl), G_DISCARD);
+	    }
+	}
 
 void
 Tcl__Finalize(interp=NULL)
@@ -1072,8 +1091,22 @@ Tcl__Finalize(interp=NULL)
 	 * longer plan to use Tcl *AT ALL*.
 	 */
 	if (!initialized) { return; }
-	if (interp) {
-	    Tcl_DeleteInterp(interp);
+	if (hvInterps) {
+	    /*
+	     * Delete all the global hash of live interps.
+	     */
+	    HE *he;
+
+	    hv_iterinit(hvInterps);
+	    he = hv_iternext(hvInterps);
+	    while (he) {
+		I32 len;
+		interp = *((Tcl *) hv_iterkey(he, &len));
+		Tcl_DeleteInterp(interp);
+		he = hv_iternext(hvInterps);
+	    }
+	    hv_undef(hvInterps);
+	    hvInterps = NULL;
 	}
 	Tcl_Finalize();
 	initialized = 0;
@@ -1396,6 +1429,7 @@ BOOT:
 	Tcl_FindExecutable(x && SvPOK(x) ? SvPV_nolen(x) : NULL);
 #endif
 	initialized = 1;
+	hvInterps = newHV();
     }
 
     tclBooleanTypePtr   = Tcl_GetObjType("boolean");
