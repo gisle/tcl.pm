@@ -7,17 +7,12 @@ plan tests => 6;
 
 use Tcl;
 use Sys::Hostname qw(hostname);
+use File::Spec::Functions;
 
 my $tcl = Tcl->new;
 
 ok($tcl);
-my $nameofexe = $tcl->Eval("info nameofexecutable");
-if ($^O eq "MSWin32") {
-    # Tcl nameofexe returns the safe 8.3 version, so convert it to match $^X
-    ok($tcl->Eval("file native [file attributes $nameofexe -longname]"), $^X);
-} else {
-    ok($nameofexe, $^X);
-}
+ok(canonpath($tcl->Eval("info nameofexecutable")), canonpath($^X));
 ok($tcl->Eval("info hostname"), hostname);
 
 my $tclversion = $tcl->Eval("info tclversion");
