@@ -1,6 +1,12 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+
+/*
+ * Until we update for 8.4 CONST-ness
+ */
+#define USE_NON_CONST
+
 #include <tcl.h>
 
 #define Tcl_new(class) Tcl_CreateInterp()
