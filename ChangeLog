@@ -1,3 +1,9 @@
+2004-04-07  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (Tcl_PerlCallWrapper): handle the perl sub error case
+	where an error occurs calling perl sub from Tcl callback.
+	(Tcl_Init): move init of Tcl_Obj typePtrs
+
 2004-04-06  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs: use ANSI prototypes for some functions.

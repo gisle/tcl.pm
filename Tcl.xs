@@ -65,16 +65,6 @@ SvFromTclObj(Tcl_Obj *objPtr)
     int len;
     char *str;
 
-    if (tclBooleanTypePtr == NULL) {
-	tclBooleanTypePtr   = Tcl_GetObjType("boolean");
-	tclByteArrayTypePtr = Tcl_GetObjType("bytearray");
-	tclDoubleTypePtr    = Tcl_GetObjType("double");
-	tclIntTypePtr       = Tcl_GetObjType("int");
-	tclListTypePtr      = Tcl_GetObjType("list");
-	tclStringTypePtr    = Tcl_GetObjType("string");
-	tclWideIntTypePtr   = Tcl_GetObjType("wideInt");
-    }
-
     if (objPtr->typePtr == tclIntTypePtr) {
 	return newSViv(objPtr->internalRep.longValue);
     }
@@ -170,24 +160,31 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
     EXTEND(sp, argc + 2);
     PUSHs(sv_mortalcopy(*av_fetch(av, 1, FALSE)));
     PUSHs(sv_mortalcopy(*av_fetch(av, 2, FALSE)));
-    while (argc--)
+    while (argc--) {
 	PUSHs(sv_2mortal(newSVpv(*argv++, 0)));
+    }
     PUTBACK;
     count = perl_call_sv(*av_fetch(av, 0, FALSE), G_SCALAR);
     SPAGAIN;
-    if (count != 1)
-	croak("perl sub bound to Tcl proc didn't return exactly 1 argument");
 
-    sv = POPs;
-    PUTBACK;
-    
-    /* rc = SvOK(sv) ? TCL_OK : TCL_ERROR; <-- elder version. but nothing wrong
-     * for callback to return undef. Hence following: */
-    rc = TCL_OK;
-    
-    if (SvOK(sv)) {
-	Tcl_SetResult(interp, SvPV_nolen(sv), TCL_VOLATILE);
+    if (SvTRUE(ERRSV)) {
+	Tcl_SetResult(interp, SvPV_nolen(ERRSV), TCL_VOLATILE);
+	POPs;
+	rc = TCL_ERROR;
     }
+    else {
+	if (count != 1) {
+	    croak("perl sub bound to Tcl proc didn't return exactly 1 argument");
+	}
+	sv = POPs;
+
+	if (SvOK(sv)) {
+	    Tcl_SetResult(interp, SvPV_nolen(sv), TCL_VOLATILE);
+	}
+	rc = TCL_OK;
+    }
+
+    PUTBACK;
     /*
      * If the routine returned undef, it indicates that it has done the
      * SetResult itself and that we should return TCL_ERROR
@@ -378,14 +375,14 @@ void
 Tcl_icall(interp, proc, ...)
 	Tcl		interp
 	SV *		proc
-	Tcl_CmdInfo	cmdinfo = NO_INIT
-        static int	i, result = NO_INIT
-        static STRLEN	length = NO_INIT
-	static int	argc = NO_INIT
-	static Tcl_Obj **   objv = NO_INIT
+	static Tcl_Obj **objv = NO_INIT
 	static char **	argv = NO_INIT
 	static int	argv_cursize = 0;
-	static char *	str = NO_INIT
+	Tcl_CmdInfo	cmdinfo = NO_INIT
+        int		i, result = NO_INIT
+        STRLEN		length = NO_INIT
+	int		argc = NO_INIT
+	char *		str = NO_INIT
     PPCODE:
 	argc = items-1;
 	if (argv_cursize == 0) {
@@ -483,8 +480,19 @@ Tcl_Init(interp)
     	if (!findexecutable_called) {
 	    Tcl_FindExecutable("."); /* TODO (?) place here $^X ? */
 	}
-	if (Tcl_Init(interp) != TCL_OK)
+	if (Tcl_Init(interp) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
+	}
+
+	if (tclBooleanTypePtr == NULL) {
+	    tclBooleanTypePtr   = Tcl_GetObjType("boolean");
+	    tclByteArrayTypePtr = Tcl_GetObjType("bytearray");
+	    tclDoubleTypePtr    = Tcl_GetObjType("double");
+	    tclIntTypePtr       = Tcl_GetObjType("int");
+	    tclListTypePtr      = Tcl_GetObjType("list");
+	    tclStringTypePtr    = Tcl_GetObjType("string");
+	    tclWideIntTypePtr   = Tcl_GetObjType("wideInt");
+	}
 
 void
 Tcl_CreateCommand(interp,cmdName,cmdProc,clientData=&PL_sv_undef,deleteProc=Nullsv)
