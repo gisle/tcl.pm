@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.72';
+$Tcl::VERSION = '0.73';
 
 =head1 NAME
 
@@ -323,11 +323,13 @@ sub call {
     my @args = @_; # this could be optimized
     for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
 	my $arg = $args[$argcnt];
+	next unless ref $arg;
 	if (ref($arg) eq 'CODE') {
 	    $args[$argcnt] = $interp->create_tcl_sub($arg);
 	}
-	elsif (ref($arg) eq 'Tcl::Tk::Widget' || ref($arg) eq 'Tcl::Tk::Widget::MainWindow') {
-	    $args[$argcnt] = $$arg; # this trick will help manipulate widgets
+	elsif (ref($arg) =~ /^Tcl::Tk::Widget\b/) {
+	    # this trick will help manipulate widgets
+	    $args[$argcnt] = $arg->path;
 	}
 	elsif (ref($arg) eq 'SCALAR') {
 	    my $nm = "$arg"; # stringify scalar ref ...
@@ -340,7 +342,7 @@ sub call {
 	    }
 	    $args[$argcnt] = $nm; # ... and substitute its name
 	}
-	if (ref($arg) eq 'REF' and ref($$arg) eq 'SCALAR') {
+	elsif (ref($arg) eq 'REF' and ref($$arg) eq 'SCALAR') {
 	    # this is a very special case: if we see construct like \\"xy"
 	    # then we must prepare TCL-events variables such as TCL
 	    # variables %x, %y and so on, and next must be code reference
@@ -355,8 +357,10 @@ sub call {
 	    splice @args, $argcnt+1, 1;
 	}
 	elsif ((ref($arg) eq 'ARRAY') and (ref($arg->[0]) eq 'CODE')) {
-	    $args[$argcnt] = $interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
-	    die "Implement this! (array ref that means subroutine and its parameters)";
+	    # This implements subroutine call with args from an array ref
+	    # XXX needs testing
+	    $args[$argcnt] =
+		$interp->create_tcl_sub(sub {$arg->[0]->(@$arg[1..$#$arg])});
 	}
     }
     my (@res,$res);

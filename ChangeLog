@@ -1,0 +1,9 @@
+2004-03-22  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.pm: modifications from Vadim to fix minor ref issues and
+	initial attempt to support code with args in array refs.
+
+	* Tcl.xs (USE_NON_CONST): define to squelch 8.4 const warnings
+
+	started using ChangeLog
+
