@@ -495,7 +495,20 @@ TclObjFromSv(pTHX_ SV *sv)
     else if (SvPOK(sv)) {
 	STRLEN length;
 	char *str = SvPV(sv, length);
-	objPtr = Tcl_NewStringObj(str, length);
+	/*
+	 * Tcl's "String" object expects utf-8 strings.  If we aren't sure
+	 * that we have a utf-8 data, pass it as a Tcl ByteArray (C char*).
+	 *
+	 * XXX Possible optimization opportunity here.  Tcl will actually
+	 * XXX accept and handle most latin-1 char sequences correctly, but
+	 * XXX not blocks of truly binary data.  This code is 100% correct,
+	 * XXX but could be tweaked to improve performance.
+	 */
+	if (SvUTF8(sv)) {
+	    objPtr = Tcl_NewStringObj(str, length);
+	} else {
+	    objPtr = Tcl_NewByteArrayObj(str, length);
+	}
     }
     else if (SvNOK(sv)) {
 	double dval = SvNV(sv);
@@ -521,7 +534,15 @@ TclObjFromSv(pTHX_ SV *sv)
 	 */
 	STRLEN length;
 	char *str = SvPV(sv, length);
-	objPtr = Tcl_NewStringObj(str, length);
+	/*
+	 * Tcl's "String" object expects utf-8 strings.  If we aren't sure
+	 * that we have a utf-8 data, pass it as a Tcl ByteArray (C char*).
+	 */
+	if (SvUTF8(sv)) {
+	    objPtr = Tcl_NewStringObj(str, length);
+	} else {
+	    objPtr = Tcl_NewByteArrayObj(str, length);
+	}
     }
 
     return objPtr;

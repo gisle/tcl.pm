@@ -1,3 +1,10 @@
+2004-04-30  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (TclObjFromSv): pass strings to Tcl in a strictly correct
+	way - check SvUTF8 before making a String obj, otherwise make a
+	ByteArray obj.  This is 100% correct, but not as efficient as
+	ignoring the corner-case binary/utf-8 discrepancies.
+
 2004-04-29  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs: add a hash of interps created that we can force delete
