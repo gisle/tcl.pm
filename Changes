@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl.
 
+0.85    31-dec-2004
+	- Makefile.PL makes --usestubs the default
+	- minor test fixes for portability
+
 0.84    13-sept-2004
 	- Tcl.pm changes to be more perlTk compatible
 	- Makefile.PL contains few more OS-dependent processing

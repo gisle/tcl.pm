@@ -1,3 +1,16 @@
+2004-12-30  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Changes: 
+	* Tcl.pm: bump to 0.85 with change notes
+
+	* Makefile.PL: add ENV{TCLSH_PROG} tclsh exe propagation var to
+	make it easier to configure Tcl-Tk as a subdir.
+	Make --usestubs the default, allow --nousestubs.
+
+	* t/info.t: replace 'info hostname' test with 'info exists' test
+	as we just wanted another info test, not testing whether Perl and
+	Tcl agree on hostname, since they might not.
+
 2004-11-12  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (NpInitialize): support HP-UX shl_* functions.

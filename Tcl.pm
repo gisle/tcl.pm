@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.84';
+$Tcl::VERSION = '0.85';
 $Tcl::STACK_TRACE = 1;
 
 =head1 NAME
