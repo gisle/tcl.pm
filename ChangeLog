@@ -1,3 +1,10 @@
+2005-01-30  Vadim Konovalov <vadimk@vkonovalov.ru>
+
+	* Tcl.pm: automatic cleanup on widget deletion
+	bump to 0.87
+	* Changes: start 0.87 history
+
+
 2005-01-23  Vadim Konovalov <vadimk@vkonovalov.ru>
 
 	* Tcl.pm: implement method for tied hashes to Tcl::Var

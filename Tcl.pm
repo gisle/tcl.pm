@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.85';
+$Tcl::VERSION = '0.87';
 $Tcl::STACK_TRACE = 1;
 
 =head1 NAME
@@ -126,6 +126,17 @@ the first argument to the subroutine.  Example:
       widget($w)->insert("\@$x,$y", $interp->Eval('selection get'));
   }
   $widget->bind('<2>', [\&textPaste, Tcl::Ev('%x', '%y'), $widget] );
+
+=item return_ref (NAME)
+
+returns a reference corresponding to NAME, which was associated during
+previously called C<< $int->call(...) >> preprocessing. As a typical
+example this could be variable associated with a widget.
+
+=item delete_ref (NAME)
+
+deletes and returns a reference corresponding to NAME, which was associated
+during previously called C<< $int->call(...) >> preprocessing.
 
 =item icall (PROC, ARG, ...)
 
@@ -321,6 +332,15 @@ END {
 
 my %anon_refs;
 
+# %widget_refs is an array to hold refs that were created when working with
+# widget the point is - it's not dangerous to delete more than needed, because
+# those # will be re-created at the very next time they needed.
+# however when widget goes away, it is good to delete anything that comes
+# into mind with that widget
+my %widget_refs;
+my $current_widget = '';
+sub _current_refs_widget {$current_widget=shift}
+
 # Subroutine "call" preprocess the arguments for special cases
 # and then calls "icall" (implemented in Tcl.xs), which invokes
 # the command in Tcl.
@@ -337,11 +357,13 @@ sub call {
 	    # We have been passed something like \&subroutine
 	    # Create a proc in Tcl that invokes this subroutine (no args)
 	    $args[$argcnt] = $interp->create_tcl_sub($arg);
+	    $widget_refs{$current_widget}->{$args[$argcnt]}++;
 	}
 	elsif ($ref =~ /^Tcl::Tk::Widget\b/) {
 	    # We have been passed a widget reference.
 	    # Convert to its Tk pathname (eg, .top1.fr1.btn2)
 	    $args[$argcnt] = $arg->path;
+	    $current_widget = $args[$argcnt] if $argcnt==0;
 	}
 	elsif ($ref eq 'SCALAR') {
 	    # We have been passed something like \$scalar
@@ -353,7 +375,8 @@ sub call {
 	    my $nm = "::perl::$arg";
 	    #$nm =~ s/\W/_/g; # remove () from stringified name
 	    unless (exists $anon_refs{$nm}) {
-		$anon_refs{$nm}++;
+		$widget_refs{$current_widget}->{$nm}++;
+		$anon_refs{$nm} = $arg;
 		my $s = $$arg;
 		tie $$arg, 'Tcl::Var', $interp, $nm;
 		$s = '' unless defined $s;
@@ -460,6 +483,39 @@ sub wcall {
     }
 }
 
+sub return_ref {
+    my $interp = shift;
+    my $rname = shift;
+    return $anon_refs{$rname};
+}
+sub delete_ref {
+    my $interp = shift;
+    my $rname = shift;
+    my $ref = delete $anon_refs{$rname};
+    if (ref($ref) eq 'CODE') {
+	$interp->DeleteCommand($rname);
+    }
+    else {
+	$interp->UnsetVar($rname); #TODO: will this delete variable in Tcl?
+	untie $$ref;
+    }
+    return $ref;
+}
+sub return_widget_refs {
+    my $interp = shift;
+    my $wpath = shift;
+    return keys %{$widget_refs{$wpath}};
+}
+sub delete_widget_refs {
+    my $interp = shift;
+    my $wpath = shift;
+    for (keys %{$widget_refs{$wpath}}) {
+	#print STDERR "del:$wpath($_)\n";
+	delete $widget_refs{$wpath}->{$_};
+	$interp->delete_ref($_);
+    }
+}
+
 # create_tcl_sub will create TCL sub that will invoke perl anonymous sub
 # If $events variable is specified then special processing will be
 # performed to provide needed '%' variables.
@@ -473,7 +529,7 @@ sub create_tcl_sub {
 	$tclname = "::perl::$sub";
     }
     unless (exists $anon_refs{$tclname}) {
-	$anon_refs{$tclname}++;
+	$anon_refs{$tclname} = $sub;
 	$interp->CreateCommand($tclname, $sub);
     }
     if ($events) {
@@ -556,7 +612,7 @@ sub DELETE {
 
 sub UNTIE {
     my $ref = shift;
-    print STDERR "UNTIE:$ref(@_)\n"; # Why this never called?
+    #print STDERR "UNTIE:$ref(@_)\n";
 }
 sub DESTROY {
     my $ref = shift;

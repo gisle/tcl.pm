@@ -1,5 +1,8 @@
 Revision history for Perl extension Tcl.
 
+0.87    ????-2005
+	- automatic cleanup on widget deletion
+
 0.85    31-dec-2004
 	- Makefile.PL makes --usestubs the default
 	- minor test fixes for portability
