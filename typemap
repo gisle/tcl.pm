@@ -1,0 +1,4 @@
+# $Id$
+Tcl		T_PTROBJ
+Tcl::Var	T_AVREF
+PerlIO *	T_INOUT
