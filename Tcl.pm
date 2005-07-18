@@ -1,7 +1,7 @@
 package Tcl;
 use Carp;
 
-$Tcl::VERSION = '0.87';
+$Tcl::VERSION = '0.88';
 $Tcl::STACK_TRACE = 1;
 
 =head1 NAME
@@ -297,16 +297,92 @@ Omit the I<$flags> argument if not wanted. Any alteration to Perl
 variable I<$hash{"key"}> affects the Tcl variable I<array(key)>
 and I<vice versa>.
 
+=head2 Accessing Perl from within Tcl
+
+After creation of Tcl interpreter, in addition to evaluation of Tcl/Tk
+commands within Perl, other way round also instantiated. Within a special
+namespace C< ::perl > following objects are created:
+
+   ::perl::Eval
+
+So it is possible to use Perl objects from within Tcl.
+
+=head2 Moving Tcl/Tk around with Tcl.pm
+
+NOTE: explanations below is for developers managing Tcl/Tk installations
+itself, users should skip this section.
+
+In order to create Tcl/Tk application with this module, you need to make
+sure that Tcl/Tk is available within visibility of this module. There are
+many ways to achieve this, varying on ease of starting things up and
+providing flexible moveable archived files.
+
+Following list enumerates them, in order of increased possibility to change
+location.
+
+=over
+
+=item * First method
+
+Install Tcl/Tk first, then install Perl module Tcl, so installed Tcl/Tk will
+be used. This is most normal approach, and no care of Tcl/Tk distribution is
+taken on Perl side (this is done on Tcl/Tk side)
+
+=item * Second method
+
+Copy installed Tcl/Tk binaries to some location, then install Perl module Tcl
+with a special action to make Tcl.pm know of this location. This approach
+makes sure that only chosen Tcl installation is used.
+
+=item * Third method
+
+During compiling Tcl Perl module, Tcl/Tk could be statically linked into
+module's shared library and all other files zipped into a single archive, so
+each file extracted when needed.
+
+=back
+
+Some global variables within $Tcl::config:: namespace are used to make
+such installations possible.
+
+=head3 First method
+
+=head3 Second method
+
+To use second approach, desired set of Tcl/Tk binaries should be prepared
+in a single directory. Mostly these files could be files from existing Tcl/Tk
+installation.
+
+Use C<create-moveable-dist.pl> script to create proper configuration this way.
+
+From inmplementation side of view, following things are done in this way:
+
+=over
+
+=item * Entire Tcl/Tk directory is copied into C<blib/lib>
+
+=item * Tcl.cfg file is created at the same dir where Tcl.pm is placed; this
+file contain some configuration and a code to initially load Tcl shared library.
+
+=back 
+
+=head3 Third method
+
+To link Tcl/Tk binaries, prepare their libraries and then instruct Makefile.PL
+to use these libraries in a link stage.
+(TODO provide better detailed description) 
+
 =head1 AUTHORS
 
 Malcolm Beattie, mbeattie@sable.ox.ac.uk, 23 Oct 1994.
-Vadim Konovalov, vkonovalov@peterstar.ru, 19 May 2003.
+Vadim Konovalov, vkonovalov@somewhere.com, 19 May 2003.
 Jeff Hobbs, jeff (a) activestate . com, 22 Mar 2004.
 Gisle Aas, gisle (a) activestate . com, 14 Apr 2004.
 
 =head1 COPYRIGHT
 
-This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+This program is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
 See http://www.perl.com/perl/misc/Artistic.html
 
@@ -316,6 +392,12 @@ use strict;
 use DynaLoader;
 use vars qw(@ISA);
 @ISA = qw(DynaLoader);
+
+# consideration for moveable configuration of tcl/tk
+# This is done before bootstraping, to make possible of searching of correct
+# shared libraries
+$Tcl::config::tcl_pm_path = [__FILE__=~/^(.*)Tcl\.pm$/i]->[0];
+do "$Tcl::config::tcl_pm_path/Tcl.cfg" if -f "$Tcl::config::tcl_pm_path/Tcl.cfg";
 
 Tcl->bootstrap($Tcl::VERSION);
 
