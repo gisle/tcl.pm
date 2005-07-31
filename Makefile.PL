@@ -69,7 +69,14 @@ my $defs      = ($usestubs ? "-DUSE_TCL_STUBS" : "");
 # If using stubs, we will set the LIB_RUNTIME_DIR and TCL_LIB_FILE
 # to point to the install location as the default dll to load.
 
-if ($tclconfig) {
+if ($tclconfig || $^O eq 'darwin') {
+    unless ($tclconfig) {
+       open(TCLSH, "$tclsh tclcfg.tcl |") or die "error starting tclsh: $!\n";
+       my $tclcfg = join '', <TCLSH>;
+       close(TCLSH);
+       my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)\n/gm;
+       $tclconfig = $tclcfg{'tclConfig.sh'};
+    }
     die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
 
     # Retrieve all info based on tclConfig.sh

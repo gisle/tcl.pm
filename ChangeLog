@@ -1,3 +1,8 @@
+2005-07-31  Vadim Konovalov
+
+	* Makefile.PL: darwin config touches from Tom Wyant <WYANT@cpan.org>
+	* Tcl.pm: tiny 'authors' change
+
 2005-07-18  Vadim Konovalov
 
 	* Tcl.pm: documentation improvements: explain installation techniques;
