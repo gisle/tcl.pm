@@ -69,12 +69,12 @@ Invoke I<Tcl_Init> on the interpeter.
 =item Eval (STRING)
 
 Evaluate script STRING in the interpreter. If the script returns
-successfully (TCL_OK) then the Perl return value corresponds to
-interp->result otherwise a I<die> exception is raised with the $@
-variable corresponding to interp->result. In each case, I<corresponds>
-means that if the method is called in scalar context then the string
-interp->result is returned but if the method is called in list context
-then interp->result is split as a Tcl list and returned as a Perl list.
+successfully (TCL_OK) then the Perl return value corresponds to Tcl
+interpreter's result otherwise a I<die> exception is raised with the $@
+variable corresponding to Tcl's interpreter result object. In each case,
+I<corresponds> means that if the method is called in scalar context then
+the string result is returned but if the method is called in list context
+then the result is split as a Tcl list and returned as a Perl list.
 
 =item GlobalEval (STRING)
 
@@ -115,11 +115,11 @@ code as:
   my $r = 'aaaa';
   button(".d", -textvariable => \$r, -command=>sub {$r++});
 
-3.  As a special case, it is supported a mechanism to deal with Tk's
-special event variables (they are mentioned as '%x', '%y' and so on
-throughout Tcl).  When creating a subrutine reference that uses such
-variables, you must declare the desired variables using Tcl::Ev as
-the first argument to the subroutine.  Example:
+3.  As a special case, there is a mechanism to deal with Tk's special event
+variables (they are mentioned as '%x', '%y' and so on throughout Tcl).
+When creating a subroutine reference that uses such variables, you must
+declare the desired variables using Tcl::Ev as the first argument to the
+subroutine.  Example:
 
   sub textPaste {
       my ($x,$y,$w) = @_;
@@ -177,7 +177,7 @@ for details.
 
 =item result ()
 
-Returns the current interp->result field. List v. scalar context is
+Returns the current Tcl interpreter result. List v. scalar context is
 handled as in I<Eval>() above.
 
 =item CreateCommand (CMDNAME, CMDPROC, CLIENTDATA, DELETEPROC)
@@ -217,25 +217,26 @@ registered commands.
 
 =item SetResult (STRING)
 
-Sets interp->result to STRING.
+Sets Tcl interpreter result to STRING.
 
 =item AppendResult (LIST)
 
-Appends each element of LIST to interp->result.
+Appends each element of LIST to Tcl's interpreter result object.
 
 =item AppendElement (STRING)
 
-Appends STRING to interp->result as an extra Tcl list element.
+Appends STRING to Tcl interpreter result object as an extra Tcl list element.
 
 =item ResetResult ()
 
-Resets interp->result.
+Resets Tcl interpreter result.
 
 =item SplitList (STRING)
 
 Splits STRING as a Tcl list. Returns a Perl list or the empty list if
 there was an error (i.e. STRING was not a properly formed Tcl list).
-In the latter case, the error message is left in interp->result.
+In the latter case, the error message is left in Tcl's interpreter
+result object.
 
 =item SetVar (VARNAME, VALUE, FLAGS)
 

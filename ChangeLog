@@ -1,5 +1,7 @@
 2005-08-15  Jeff Hobbs  <jeffh@ActiveState.com>
 
+	* Tcl.pm: doc cleanup
+
 	* Tcl.xs: squelch a few compile warnings
 
 	* t/createcmd.t: perl 5.8.0 finalization order is wonky, so don't
@@ -29,7 +31,6 @@
 	* Tcl.pm: automatic cleanup on widget deletion
 	bump to 0.87
 	* Changes: start 0.87 history
-
 
 2005-01-23  Vadim Konovalov <vadimk@vkonovalov.ru>
 
