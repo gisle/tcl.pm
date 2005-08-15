@@ -2,7 +2,9 @@ use Tcl;
 
 $| = 1;
 
-print "1..4\n";
+# 5.8.0 has an order destroy issue that prevents proper Tcl finalization
+my $tests = $] == 5.008 ? 3 : 4;
+print "1..$tests\n";
 
 sub foo {
     my($clientdata, $interp, @args) = @_;
@@ -27,4 +29,4 @@ $i->CreateCommand("bar", \&bar, 4, \&bargone);
 $i->Eval("foo 1");
 $i->Eval("puts [bar]");
 $i->DeleteCommand("foo");
-# final destructor of $i triggers destructor for Tcl proc bar
+# final destructor of $i triggers destructor for Tcl proc bar (!5.8.0)

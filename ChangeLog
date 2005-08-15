@@ -1,3 +1,10 @@
+2005-08-15  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs: squelch a few compile warnings
+
+	* t/createcmd.t: perl 5.8.0 finalization order is wonky, so don't
+	expect the implicit Tcl finalization callbacks.
+
 2005-07-31  Vadim Konovalov
 
 	* Makefile.PL: darwin config touches from Tom Wyant <WYANT@cpan.org>

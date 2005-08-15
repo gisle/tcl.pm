@@ -869,6 +869,9 @@ Tcl_result(interp)
 	if (initialized) {
 	    RETVAL = Tcl_GetStringResult(interp);
 	}
+	else {
+	    RETVAL = (char *) NULL;
+	}
     OUTPUT:
 	RETVAL
 
@@ -940,7 +943,7 @@ Tcl_EvalFileHandle(interp, handle)
 	if (!initialized) { return; }
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
-        while (s = sv_gets(sv, handle, append))
+        while ((s = sv_gets(sv, handle, append)))
 	{
             if (!Tcl_CommandComplete(s))
 		append = 1;
@@ -1236,6 +1239,9 @@ Tcl_DoOneEvent(interp, flags)
     CODE:
 	if (initialized) {
 	    RETVAL = Tcl_DoOneEvent(flags);
+	}
+	else {
+	    RETVAL = 0;
 	}
     OUTPUT:
 	RETVAL
