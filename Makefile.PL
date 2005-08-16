@@ -144,6 +144,10 @@ if ($tclconfig || $^O eq 'darwin') {
 	    $tclsh=~/([\d.]+)$/ and $incpath .= " -I/usr/local/include/tcl$1";
 	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.so\\\"" if $usestubs; 
 	}
+	elsif ($^O eq 'hpux') {
+	    #$tclver = '';
+	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.sl\\\"" if $usestubs;
+	}
 	else {
 	    #$tclver = '';
 	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.so\\\"" if $usestubs; 
