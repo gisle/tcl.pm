@@ -9,7 +9,7 @@ sub foo {
     my $glob = $interp->GetVar("bar", Tcl::GLOBAL_ONLY);
     my $loc = $interp->GetVar("bar");
     print "$glob $loc\n";
-    $interp->GlobalEval('puts $four');
+    $interp->Eval('puts $four', Tcl::EVAL_GLOBAL);
 }
 
 $i = new Tcl;

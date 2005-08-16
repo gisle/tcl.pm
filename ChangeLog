@@ -1,3 +1,21 @@
+2005-08-16  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.xs (SvFromTclObj, TclObjFromSv): Convert NULLs to utf-8
+	\xC0\x80 to/from Tcl as some extensions (eg Tk) call non-counted
+	string APIs.
+	(Tcl_result, Tcl_AppendResult): use Sv <> Tcl_Obj bridge functions.
+	(Tcl_Eval, Tcl_GlobalEval): allow optional flags arg to Tcl::Eval,
+	removing Tcl::GlobalEval.  Add Tcl::EVAL_GLOBAL and
+	Tcl::EVAL_DIRECT constants.
+	
+	* Tcl.pm: note removal of Tcl::GlobalEval, updated Tcl::Eval
+
+	* t/unicode.t (new): extended unicode/null passing tests
+
+	* t/var.t: replace GlobalEval with Eval using flags.
+
+	* Makefile.PL: HP-UX uses .sl libnames
+
 2005-08-15  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.pm: doc cleanup

@@ -520,6 +520,32 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 	sv = newSVpvn(str, len);
 	/* should turn on, but let's check this first for efficiency */
 	if (len && has_highbit(str, len)) {
+	    /*
+	     * Tcl can encode NULL as overlong utf-8 \300\200 (\xC0\x80).
+	     * Tcl itself doesn't require this, but some extensions do when
+	     * they pass the string data to native C APIs (like strlen).
+	     * Tk is the most notable case for this (calling out to native UI
+	     * toolkit APIs that don't take counted strings).
+	     *  s/\300\200/\0/g
+	     */
+	    char *nul_start;
+	    STRLEN len;
+	    char *s = SvPV(sv, len);
+	    char *end = s + len;
+	    while ((nul_start = memchr(s, '\300', len))) {
+		if (nul_start + 1 < end && nul_start[1] == '\200') {
+		    /* found it */
+		    nul_start[0] = '\0';
+		    memmove(nul_start + 1, nul_start + 2,
+			    end - (nul_start + 2));
+		    len--;
+		    end--;
+		    *end = '\0';
+		    SvCUR_set(sv, SvCUR(sv) - 1);
+		}
+		len -= (nul_start + 1) - s;
+		s = nul_start + 1;
+	    }
 	    SvUTF8_on(sv);
 	}
     }
@@ -582,6 +608,33 @@ TclObjFromSv(pTHX_ SV *sv)
 	 * XXX but could be tweaked to improve performance.
 	 */
 	if (SvUTF8(sv)) {
+	    /*
+	     * Tcl allows NULL to be encoded overlong as \300\200 (\xC0\x80).
+	     * Tcl itself doesn't require this, but some extensions do when
+	     * they pass the string data to native C APIs (like strlen).
+	     * Tk is the most notable case for this (calling out to native UI
+	     * toolkit APIs that don't take counted strings).
+	     */
+	    if (memchr(str, '\0', length)) {
+		/* ($sv_copy = $sv) =~ s/\0/\300\200/g */
+		SV *sv_copy = sv_mortalcopy(sv);
+		STRLEN len;
+		char *s = SvPV(sv_copy, len);
+		char *nul;
+
+		while ((nul = memchr(s, '\0', len))) {
+		    STRLEN i = nul - SvPVX(sv_copy);
+		    s = SvGROW(sv_copy, SvCUR(sv_copy) + 2);
+		    nul = s + i;
+		    memmove(nul + 2, nul + 1, SvEND(sv_copy) - (nul + 1));
+		    nul[0] = '\300';
+		    nul[1] = '\200';
+		    SvCUR_set(sv_copy, SvCUR(sv_copy) + 1);
+		    s = nul + 2;
+		    len = SvEND(sv_copy) - s;
+		}
+		str = SvPV(sv_copy, length);
+	    }
 	    objPtr = Tcl_NewStringObj(str, length);
 	} else {
 	    objPtr = Tcl_NewByteArrayObj(str, length);
@@ -616,6 +669,9 @@ TclObjFromSv(pTHX_ SV *sv)
 	 * that we have a utf-8 data, pass it as a Tcl ByteArray (C char*).
 	 */
 	if (SvUTF8(sv)) {
+	    /*
+	     * Should we consider overlong NULL encoding for Tcl here?
+	     */
 	    objPtr = Tcl_NewStringObj(str, length);
 	} else {
 	    objPtr = Tcl_NewByteArrayObj(str, length);
@@ -862,23 +918,24 @@ Tcl_new(class = "Tcl")
     OUTPUT:
 	RETVAL
 
-char *
+SV *
 Tcl_result(interp)
 	Tcl	interp
     CODE:
 	if (initialized) {
-	    RETVAL = Tcl_GetStringResult(interp);
+	    RETVAL = SvFromTclObj(aTHX_ Tcl_GetObjResult(interp));
 	}
 	else {
-	    RETVAL = (char *) NULL;
+	    RETVAL = &PL_sv_undef;
 	}
     OUTPUT:
 	RETVAL
 
 void
-Tcl_Eval(interp, script)
+Tcl_Eval(interp, script, flags = 0)
 	Tcl	interp
 	SV *	script
+	int     flags
 	SV *	interpsv = ST(0);
 	STRLEN	length = NO_INIT
 	char *cscript = NO_INIT
@@ -889,7 +946,7 @@ Tcl_Eval(interp, script)
 	Tcl_ResetResult(interp);
 	/* sv_mortalcopy here prevents stringifying script - necessary ?? */
 	cscript = SvPV(sv_mortalcopy(script), length);
-	if (Tcl_EvalEx(interp, cscript, length, 0) != TCL_OK) {
+	if (Tcl_EvalEx(interp, cscript, length, flags) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
 	prepare_Tcl_result(aTHX_ interp, "Tcl::Eval");
@@ -909,26 +966,6 @@ Tcl_EvalFile(interp, filename)
 	    croak(Tcl_GetStringResult(interp));
 	}
 	prepare_Tcl_result(aTHX_ interp, "Tcl::EvalFile");
-	SPAGAIN;
-
-void
-Tcl_GlobalEval(interp, script)
-	Tcl	interp
-	SV *	script
-	SV *	interpsv = ST(0);
-	STRLEN	length = NO_INIT
-	char *cscript = NO_INIT
-    PPCODE:
-	if (!initialized) { return; }
-	(void) sv_2mortal(SvREFCNT_inc(interpsv));
-	PUTBACK;
-	Tcl_ResetResult(interp);
-	/* sv_mortalcopy here prevents stringifying script - necessary ?? */
-	cscript = SvPV(sv_mortalcopy(script), length);
-	if (Tcl_EvalEx(interp, cscript, length, TCL_EVAL_GLOBAL) != TCL_OK) {
-	    croak(Tcl_GetStringResult(interp));
-	}
-	prepare_Tcl_result(aTHX_ interp, "Tcl::GlobalEval");
 	SPAGAIN;
 
 void
@@ -1237,12 +1274,7 @@ Tcl_DoOneEvent(interp, flags)
 	Tcl	interp
 	int	flags
     CODE:
-	if (initialized) {
-	    RETVAL = Tcl_DoOneEvent(flags);
-	}
-	else {
-	    RETVAL = 0;
-	}
+	RETVAL = initialized ? Tcl_DoOneEvent(flags) : 0;
     OUTPUT:
 	RETVAL
 
@@ -1295,14 +1327,20 @@ void
 Tcl_ResetResult(interp)
 	Tcl	interp
 
-char *
+SV *
 Tcl_AppendResult(interp, ...)
 	Tcl	interp
 	int	i = NO_INIT
     CODE:
-	for (i = 1; i <= items; i++)
-	    Tcl_AppendResult(interp, SvPV_nolen(ST(i)), NULL);
-	RETVAL = Tcl_GetStringResult(interp);
+	if (initialized) {
+	    Tcl_Obj *objPtr = Tcl_GetObjResult(interp);
+	    for (i = 1; i < items; i++) {
+		Tcl_AppendObjToObj(objPtr, TclObjFromSv(aTHX_ ST(i)));
+	    }
+	    RETVAL = SvFromTclObj(aTHX_ objPtr);
+	} else {
+	    RETVAL = &PL_sv_undef;
+	}
     OUTPUT:
 	RETVAL
 
@@ -1602,4 +1640,7 @@ BOOT:
 	newCONSTSUB(stash, "IDLE_EVENTS",      newSViv(TCL_IDLE_EVENTS));
 	newCONSTSUB(stash, "ALL_EVENTS",       newSViv(TCL_ALL_EVENTS));
 	newCONSTSUB(stash, "DONT_WAIT",        newSViv(TCL_DONT_WAIT));
+
+	newCONSTSUB(stash, "EVAL_GLOBAL",  newSViv(TCL_EVAL_GLOBAL));
+	newCONSTSUB(stash, "EVAL_DIRECT",  newSViv(TCL_EVAL_DIRECT));
     }

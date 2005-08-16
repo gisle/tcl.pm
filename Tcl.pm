@@ -66,7 +66,7 @@ returned (the object argument omitted in each case).
 
 Invoke I<Tcl_Init> on the interpeter.
 
-=item Eval (STRING)
+=item Eval (STRING, FLAGS)
 
 Evaluate script STRING in the interpreter. If the script returns
 successfully (TCL_OK) then the Perl return value corresponds to Tcl
@@ -75,11 +75,13 @@ variable corresponding to Tcl's interpreter result object. In each case,
 I<corresponds> means that if the method is called in scalar context then
 the string result is returned but if the method is called in list context
 then the result is split as a Tcl list and returned as a Perl list.
+The FLAGS field is optional and can be a bitwise OR of the constants
+Tcl::EVAL_GLOBAL or Tcl::EVAL_DIRECT.
 
 =item GlobalEval (STRING)
 
-Evalulate script STRING at global level. Otherwise, the same as
-I<Eval>() above.
+REMOVED.  Evalulate script STRING at global level.
+Call I<Eval>(STRING, Tcl::EVAL_GLOBAL) instead.
 
 =item EvalFile (FILENAME)
 
@@ -242,8 +244,8 @@ result object.
 
 The FLAGS field is optional. Sets Tcl variable VARNAME in the
 interpreter to VALUE. The FLAGS argument is the usual Tcl one and
-can be a bitwise OR of the constants $Tcl::GLOBAL_ONLY,
-$Tcl::LEAVE_ERR_MSG, $Tcl::APPEND_VALUE, $Tcl::LIST_ELEMENT.
+can be a bitwise OR of the constants Tcl::GLOBAL_ONLY,
+Tcl::LEAVE_ERR_MSG, Tcl::APPEND_VALUE, Tcl::LIST_ELEMENT.
 
 =item SetVar2 (VARNAME1, VARNAME2, VALUE, FLAGS)
 
