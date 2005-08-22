@@ -14,6 +14,7 @@ t/info.t	        See if Tcl info command works
 t/result.t		See if Tcl result protocol works
 t/subclass.t		See if we can subclass Tcl
 t/trace.t		See if variable tarcing works
+t/unicode.t		some unicode tests
 t/var.t			See if access to/from Tcl variables works
 typemap			Tcl extension types
 tclcfg.tcl		Tcl script to discover TCL installation options

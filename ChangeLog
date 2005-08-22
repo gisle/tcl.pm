@@ -1,3 +1,9 @@
+2005-08-23  Vadim Konovalov
+
+	* MANIFEST: mention t/unicode.t
+	* Changes: brief summary for 0.88
+	* CPAN release 0.88
+
 2005-08-16  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (SvFromTclObj, TclObjFromSv): Convert NULLs to utf-8

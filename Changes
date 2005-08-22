@@ -1,9 +1,12 @@
 Revision history for Perl extension Tcl.
 
-0.88    ??-???-2005
+0.88    23-aug-2005
 	- documentation
 	- moveable distributions - implement & document
 	- TODO file removal
+	- more OS support in Makefile.PL
+	- some code modification in Tcl bridge
+	- more tests
 
 0.87    02-feb-2005
 	- automatic cleanup on widget deletion
