@@ -1,3 +1,7 @@
+2005-08-24  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tclcfg.tcl: enhanced tclConfig.sh file search
+
 2005-08-23  Vadim Konovalov
 
 	* MANIFEST: mention t/unicode.t
