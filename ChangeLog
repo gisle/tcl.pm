@@ -1,7 +1,8 @@
 2005-09-09  Gisle Aas  <gisle@ActiveState.com>
 
 	* Tcl.xs: Read Tcl library override from $Tcl::DL_PATH instead
-	of the $ENV{PERL_TCL_DLL}
+	of the $ENV{PERL_TCL_DLL}.
+	On Mac OS X search for libtcl.so using the standard File System Domain order.
 	* Tcl.pm: Initialize $Tcl::DL_PATH from environment if not set
 	up by something else.  Initialize from $ENV{PERL_TCL_DLL} for
 	backwards compatiblity.

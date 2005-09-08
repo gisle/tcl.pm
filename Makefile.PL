@@ -98,6 +98,7 @@ if ($tclconfig || $^O eq 'darwin') {
 	    (my $fmk = $tclcfg{'TCL_STUB_LIB_PATH'}) =~ s/(?<=\.framework).*//;
 	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"";
 	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\"";
+	    @extraargs = (dynamic_lib => {OTHERLDFLAGS => "-framework Carbon"});
 	} else {
 	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/lib\\\"";
 	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\""; 

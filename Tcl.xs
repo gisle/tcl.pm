@@ -42,6 +42,8 @@
 #ifndef TCL_LIB_FILE
 # ifdef WIN32
 #   define TCL_LIB_FILE "tcl84.dll"
+# elif defined(__APPLE__)
+#   define TCL_LIB_FILE "Tcl"
 # elif defined(__hpux)
 #   define TCL_LIB_FILE "libtcl8.4.sl"
 # else
@@ -59,7 +61,7 @@
 #endif
 static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
 
-#ifdef WIN32
+#if defined(WIN32)
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -70,9 +72,19 @@ static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
 	(proc = (type) GetProcAddress((HINSTANCE) handle, symbol))
 #define snprintf _snprintf
 
-#else
+#elif defined(__APPLE__)
 
-#ifdef __hpux
+#include <CoreServices/CoreServices.h>
+
+static short DOMAINS[] = {
+    kUserDomain,
+    kLocalDomain,
+    kNetworkDomain,
+    kSystemDomain
+};
+static const int DOMAINS_LEN = sizeof(DOMAINS)/sizeof(DOMAINS[0]);
+
+#elif defined(__hpux)
 /* HPUX requires shl_* routines */
 #include <dl.h>
 #define HMODULE shl_t
@@ -82,7 +94,9 @@ static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
 #define DLSYM(handle, symbol, type, proc) \
 	if (shl_findsym(&handle, symbol, (short) TYPE_PROCEDURE, \
 		(void *) &proc) != 0) { proc = NULL; }
-#else
+#endif
+
+#ifndef HMODULE
 #include <dlfcn.h>
 #define HMODULE void *
 #define DLSYM(handle, symbol, type, proc) \
@@ -91,8 +105,6 @@ static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
 
 #ifndef MAX_PATH
 #define MAX_PATH 1024
-#endif
-
 #endif
 
 /*
@@ -181,6 +193,30 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	}
     }
 
+#ifdef __APPLE__
+    if (!handle) {
+      OSErr oserr;
+      FSRef ref;
+      int i;
+
+      for (i = 0; i < DOMAINS_LEN; i++) {
+	oserr = FSFindFolder(DOMAINS[i], kFrameworksFolderType,
+			     kDontCreateFolder, &ref);
+	if (oserr != noErr) {
+	  continue;
+	}
+	oserr = FSRefMakePath(&ref, (UInt8*)libname, sizeof(libname));
+	if (oserr != noErr) {
+	  continue;
+	}
+        strcat(libname, "/Tcl.framework/" TCL_LIB_FILE);
+	/* printf("Try \"%s\"\n", libname); */
+	handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+        if (handle)
+            break;
+      }
+    }
+#else
     if (!handle) {
 	char *pos;
 
@@ -211,6 +247,7 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    }
 	}
     }
+#endif
 
 #ifdef WIN32
     if (!handle) {
