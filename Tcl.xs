@@ -163,20 +163,20 @@ static HV *hvInterps = NULL;
 static int
 NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 {
-    char *envdll, libname[MAX_PATH];
+    char *dl_path, libname[MAX_PATH];
     HMODULE handle = (HMODULE) NULL;
 
     /*
      * Try a user-supplied Tcl dll to start with.
      * If the var is supplied, force this to be correct or error out.
      */
-    envdll = getenv("PERL_TCL_DLL");
-    if (envdll != NULL) {
-	handle = dlopen(envdll, RTLD_NOW | RTLD_GLOBAL);
+    dl_path = SvPV_nolen(get_sv("Tcl::DL_PATH", TRUE));
+    if (dl_path && *dl_path) {
+	handle = dlopen(dl_path, RTLD_NOW | RTLD_GLOBAL);
 	if (handle) {
-	    memcpy(libname, envdll, MAX_PATH);
+	    memcpy(libname, dl_path, MAX_PATH);
 	} else {
-	    warn("NpLoadLibrary: could not find PERL_TCL_DLL at '%s'", envdll);
+	    warn("NpLoadLibrary: could not find Tcl library at '%s'", dl_path);
 	    return TCL_ERROR;
 	}
     }

@@ -1,3 +1,11 @@
+2005-09-09  Gisle Aas  <gisle@ActiveState.com>
+
+	* Tcl.xs: Read Tcl library override from $Tcl::DL_PATH instead
+	of the $ENV{PERL_TCL_DLL}
+	* Tcl.pm: Initialize $Tcl::DL_PATH from environment if not set
+	up by something else.  Initialize from $ENV{PERL_TCL_DLL} for
+	backwards compatiblity.
+	
 2005-08-24  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* tclcfg.tcl: enhanced tclConfig.sh file search
