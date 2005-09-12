@@ -1,3 +1,8 @@
+2005-09-12  Gisle Aas  <gisle@ActiveState.com>
+
+	* Makefile.PL: Added libscan override to prevent installation of
+	create-moveable-dist.pl.
+
 2005-09-09  Gisle Aas  <gisle@ActiveState.com>
 
 	* Tcl.xs: Read Tcl library override from $Tcl::DL_PATH instead

@@ -191,3 +191,9 @@ sub process_tclconfig {
 	$hashref->{$k} =~ s,/cygdrive/(\w)/,$1:/,ig;
     }
 }
+
+sub MY::libscan {
+    my($self, $path) =@_;
+    return '' if $path =~ /\.pl$/;
+    return $path;
+}
