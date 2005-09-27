@@ -1,3 +1,7 @@
+2005-09-28  Vadim Konovalov  <vkon@cpan.org>
+
+	* Tcl.xs: Win32 build was unfortunate
+
 2005-09-12  Gisle Aas  <gisle@ActiveState.com>
 
 	* Makefile.PL: Added libscan override to prevent installation of
