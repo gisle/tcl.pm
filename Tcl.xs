@@ -63,6 +63,9 @@ static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
 
 #if defined(WIN32)
 
+#ifndef HMODULE
+#define HMODULE void *
+#endif
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #undef WIN32_LEAN_AND_MEAN
