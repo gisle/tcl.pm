@@ -133,6 +133,7 @@ typedef AV *Tcl__Var;
 
 /*
  * Variables denoting the Tcl object types defined in the core.
+ * These may not exist - guard against NULL result.
  */
 
 static Tcl_ObjType *tclBooleanTypePtr = NULL;
@@ -212,14 +213,20 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	if (oserr != noErr) {
 	  continue;
 	}
+	/*
+	 * This should really just try loading Tcl.framework/Tcl, but will
+	 * fail if the user has requested an alternate TCL_LIB_FILE.
+	 */
         strcat(libname, "/Tcl.framework/" TCL_LIB_FILE);
 	/* printf("Try \"%s\"\n", libname); */
 	handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
-        if (handle)
+        if (handle) {
             break;
+	}
       }
     }
-#else
+#endif
+
     if (!handle) {
 	char *pos;
 
@@ -250,7 +257,6 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    }
 	}
     }
-#endif
 
 #ifdef WIN32
     if (!handle) {
@@ -520,7 +526,7 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 	}
     }
     else if (objPtr->typePtr == tclByteArrayTypePtr) {
-	str = Tcl_GetByteArrayFromObj(objPtr, &len);
+	str = (char *) Tcl_GetByteArrayFromObj(objPtr, &len);
 	sv = newSVpvn(str, len);
     }
     else if (objPtr->typePtr == tclListTypePtr) {
@@ -677,7 +683,7 @@ TclObjFromSv(pTHX_ SV *sv)
 	    }
 	    objPtr = Tcl_NewStringObj(str, length);
 	} else {
-	    objPtr = Tcl_NewByteArrayObj(str, length);
+	    objPtr = Tcl_NewByteArrayObj((unsigned char *)str, length);
 	}
     }
     else if (SvNOK(sv)) {
@@ -714,7 +720,7 @@ TclObjFromSv(pTHX_ SV *sv)
 	     */
 	    objPtr = Tcl_NewStringObj(str, length);
 	} else {
-	    objPtr = Tcl_NewByteArrayObj(str, length);
+	    objPtr = Tcl_NewByteArrayObj((unsigned char *) str, length);
 	}
     }
 

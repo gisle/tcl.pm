@@ -15,6 +15,8 @@ my $buildspec;
 my $usestubs = 1;
 my $libpath;
 my $incpath;
+my $defs = "";
+my $buildtype = "";
 my $wince;
 my @extraargs;
 
@@ -28,6 +30,9 @@ GetOptions("tclsh=s", \$tclsh,         # Use this tclsh executable as a
                                        # for determining lib info
 	   "usestubs!", \$usestubs,    # we want to use the Tcl stubs
                                        # mechanism by default
+	   "library=s", \$libpath,     # Use this specific Tcl library
+	   "include=s", \$incpath,     # Use this specific include path
+	   "define=s", \$defs,         # Use this specific set of defines
 	  )
     || die <<EOT;
 
@@ -38,6 +43,11 @@ or for WinCE cross-compilation:
 
        perl -MCross=[your-cross-name] Makefile.PL PERL_CORE=1
              PERL_SRC=[your-perl-distribution-for-wince-crosscompiling]
+
+or for expert compilation:
+
+       perl --library=-l/path/to/tcl(stub).a --include=-I/path/to/tcl/include
+            --define="-DLIB_RUNTIME_DIR=... -DTCL_LIB_FILE=..."
 
 EOT
 
@@ -63,13 +73,21 @@ if (defined $Cross::platform) {
     exit;
 }
 
-my $buildtype = ($usestubs ? "stub" : "");
-my $defs      = ($usestubs ? "-DUSE_TCL_STUBS" : "");
+if ($usestubs) {
+    $defs .= " -DUSE_TCL_STUBS";
+    $buildtype = "stub";
+}
 
 # If using stubs, we will set the LIB_RUNTIME_DIR and TCL_LIB_FILE
 # to point to the install location as the default dll to load.
 
-if ($tclconfig || $^O eq 'darwin') {
+if (defined($libpath) && defined($incpath)) {
+    # do nothing - set on command line
+    if ($^O eq 'darwin' && $libpath =~ /-framework/ ) {
+	@extraargs = (dynamic_lib => {OTHERLDFLAGS => $libpath});
+	$libpath = "";
+    }
+} elsif ($tclconfig || $^O eq 'darwin') {
     unless ($tclconfig) {
        open(TCLSH, "$tclsh tclcfg.tcl |") or die "error starting tclsh: $!\n";
        my $tclcfg = join '', <TCLSH>;

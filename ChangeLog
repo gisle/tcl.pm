@@ -1,3 +1,20 @@
+2006-05-22  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tcl-core/darwin-universal/libtclstub8.4.a: Binary stub archives
+	* tcl-core/hpux-parisc/libtclstub8.4.a:      for various platforms
+	* tcl-core/linux-i686/libtclstub8.4.a:       to allow building the
+	* tcl-core/solaris-sparc/libtclstub8.4.a:    Tcl module without any
+	* tcl-core/solaris-x86/libtclstub8.4.a:      Tcl distribution on
+	* tcl-core/win32-x86/libtclstub8.4.a:        the system.  A Tcl
+	* tcl-core/include/tcl((Plat)Decls).h:       distribution is still
+	required to test/run the module.
+
+	* Makefile.PL: add --include --library and --define as command
+	line arguments that control where to pull build info from.
+
+	* Tcl.xs (NpLoadLibrary): allow alternate TCL_LIB_FILE (basedll)
+	loading on darwin.
+
 2005-09-28  Vadim Konovalov  <vkon@cpan.org>
 
 	* Tcl.xs: Win32 build was unfortunate
