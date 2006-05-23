@@ -1,5 +1,10 @@
 Revision history for Perl extension Tcl.
 
+0.89    23-may-2006
+	- Binary stub archives for various platforms to allow building the
+	Tcl module without any Tcl distribution on the system.
+	- misc OS shared libraries loading improvements
+
 0.88    23-aug-2005
 	- documentation
 	- moveable distributions - implement & document
