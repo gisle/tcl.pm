@@ -8,6 +8,7 @@
 use strict;
 use Getopt::Long qw(GetOptions);
 use ExtUtils::MakeMaker;
+use Config;
 
 my $tclsh = 'tclsh';
 my $tclconfig;
@@ -19,6 +20,29 @@ my $defs = "";
 my $buildtype = "";
 my $wince;
 my @extraargs;
+
+my $arch;
+my $stub = "tclstub8.4";
+
+# These need updating as more platforms are added to tcl-core/ area
+if ($^O eq "MSWin32") {
+    $stub = "tclstub84";
+    $arch = "win32-x86" if ($Config{archname} =~ /-x86-/);
+} elsif ($^O eq "darwin") {
+    $arch = "darwin-universal";
+} elsif ($^O eq "solaris") {
+    $arch = "$^O-x86" if ($Config{archname} =~ /86/);
+    $arch = "$^O-sparc" if ($Config{archname} =~ /sun4/);
+} elsif ($^O eq "aix") {
+    $arch = "$^O";
+} elsif ($^O eq "hpux") {
+    $arch = "$^O-ia64" if ($Config{archname} =~ /ia64/i);
+    $arch = "$^O-parisc" if ($Config{archname} =~ /pa-risc/i);
+} elsif ($^O eq "linux") {
+    $arch = "$^O-i686" if ($Config{archname} =~ /i\d86/);
+    $arch = "$^O-ia64" if ($Config{archname} =~ /ia64/i);
+    $arch = "$^O-x86_64" if ($Config{archname} =~ /x86_64/);
+}
 
 GetOptions("tclsh=s", \$tclsh,         # Use this tclsh executable as a
                                        # base to find the lib info needed
@@ -83,10 +107,9 @@ if ($usestubs) {
 
 if (defined($libpath) && defined($incpath)) {
     # do nothing - set on command line
-    if ($^O eq 'darwin' && $libpath =~ /-framework/ ) {
-	@extraargs = (dynamic_lib => {OTHERLDFLAGS => $libpath});
-	$libpath = "";
-    }
+} elsif (!defined($tclconfig) && defined($arch)) {
+    $incpath = "-Itcl-core/include";
+    $libpath = "-Ltcl-core/$arch -l$stub";
 } elsif ($tclconfig || $^O eq 'darwin') {
     unless ($tclconfig) {
        open(TCLSH, "$tclsh tclcfg.tcl |") or die "error starting tclsh: $!\n";
@@ -121,9 +144,6 @@ if (defined($libpath) && defined($incpath)) {
 	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/lib\\\"";
 	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\""; 
 	}
-    } elsif ($^O eq 'darwin' && $libpath =~ /-framework/ ) {
-	@extraargs = (dynamic_lib => {OTHERLDFLAGS => $libpath});
-	$libpath = "";
     }
 } else {
     open(TCLSH, "$tclsh tclcfg.tcl |") or die "error starting tclsh: $!\n";
@@ -174,9 +194,21 @@ if (defined($libpath) && defined($incpath)) {
 	$libpath .= " -ltcl$buildtype$tclver";
     }
 }
+
 print "LIBS   = $libpath\n";
 print "INC    = $incpath\n";
 print "DEFINE = $defs\n";
+
+if ($^O eq 'darwin') {
+    # darwin has a broken ranlib that requires you to run it anytime
+    # you copy an archive file, so ensure ours it up-to-date
+    system("ranlib tcl-core/$arch/libtclstub8.4.a");
+    if ($libpath =~ /-framework/) {
+	# Frameworks require slightly different compile options
+	@extraargs = (dynamic_lib => {OTHERLDFLAGS => $libpath});
+	$libpath = "";
+    }
+}
 
 #print <<"#EOS";
 WriteMakefile(
@@ -212,6 +244,6 @@ sub process_tclconfig {
 
 sub MY::libscan {
     my($self, $path) =@_;
-    return '' if $path =~ /\.pl$/;
+    return '' if $path =~ /\.pl$/i;
     return $path;
 }

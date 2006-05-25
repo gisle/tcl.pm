@@ -1,4 +1,17 @@
-2006-09-23  Vadim Konovalov
+2006-05-25  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tcl-core/aix/libtclstub8.4.a:          Additional platform stubs
+	* tcl-core/hpux-ia64/libtclstub8.4.a:    libraries
+	* tcl-core/linux-ia64/libtclstub8.4.a:
+	* tcl-core/linux-x86_64/libtclstub8.4.a:
+
+	* Makefile.PL: Enhanced to allow no argument invocations to
+	attempt to build from provided stubs libraries.  No longer
+	requires --library --include options on most platforms.
+	Run ranlib on darwin stublib to work around ranlib bug.
+	(MY::libscan): make override .pl match case insensitive.
+
+2006-05-23  Vadim Konovalov
 
 	* Changes: brief summary for 0.89
 	* Tcl.pm: version 0.89
