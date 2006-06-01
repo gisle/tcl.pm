@@ -1,3 +1,7 @@
+2006-05-31  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Makefile.PL: add -framework Carbon for default OS X build
+
 2006-05-25  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* tcl-core/aix/libtclstub8.4.a:          Additional platform stubs

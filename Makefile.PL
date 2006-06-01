@@ -110,6 +110,10 @@ if (defined($libpath) && defined($incpath)) {
 } elsif (!defined($tclconfig) && defined($arch)) {
     $incpath = "-Itcl-core/include";
     $libpath = "-Ltcl-core/$arch -l$stub";
+    if ($^O eq 'darwin') {
+	# OS X also requires the Carbon framework by default
+	$libpath .= " -framework Carbon";
+    }
 } elsif ($tclconfig || $^O eq 'darwin') {
     unless ($tclconfig) {
        open(TCLSH, "$tclsh tclcfg.tcl |") or die "error starting tclsh: $!\n";
