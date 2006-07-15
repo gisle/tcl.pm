@@ -1,3 +1,8 @@
+2006-07-15  Vadim Konovalov
+
+	* Tcl.xs: support statical inclusion of some extensions (Tk, Tix, etc)
+	so when Makefile.PL invoked with --define="-DHAVE_TKINIT"
+
 2006-05-31  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Makefile.PL: add -framework Carbon for default OS X build

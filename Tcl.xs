@@ -1315,6 +1315,56 @@ Tcl_Init(interp)
 	Tcl_CreateObjCommand(interp, "::perl::Eval", Tcl_EvalInPerl,
 		(ClientData) NULL, NULL);
 
+#ifdef HAVE_TKINIT
+
+void
+Tk_Init(interp)
+	Tcl	interp
+    CODE:
+	Tk_Init(interp);
+
+#endif
+
+#ifdef HAVE_TIXINIT
+
+void
+Tix_Init(interp)
+	Tcl	interp
+    CODE:
+	Tix_Init(interp);
+
+#endif
+
+#ifdef HAVE_MEMCHANINIT
+
+void
+Memchan_Init(interp)
+	Tcl	interp
+    CODE:
+	Memchan_Init(interp);
+
+#endif
+
+#ifdef HAVE_TRFINIT
+
+void
+Trf_Init(interp)
+	Tcl	interp
+    CODE:
+	Trf_Init(interp);
+
+#endif
+
+#ifdef HAVE_VFSINIT
+
+void
+Vfs_Init(interp)
+	Tcl	interp
+    CODE:
+	Vfs_Init(interp);
+
+#endif
+
 int
 Tcl_DoOneEvent(interp, flags)
 	Tcl	interp
