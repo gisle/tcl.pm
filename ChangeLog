@@ -1,3 +1,10 @@
+2006-08-13  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* Tcl.pm: Add exe path for Darwin. OS X 10.3 requires it for #!
+	scripts to operate properly (avoids RegisterProcess error).
+
+	* tcl-core/darwin-universal/libtclstub8.4.a: AT 266625 update
+
 2006-07-15  Vadim Konovalov
 
 	* Tcl.xs: support statical inclusion of some extensions (Tk, Tix, etc)

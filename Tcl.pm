@@ -407,7 +407,20 @@ unless (defined $DL_PATH) {
     $DL_PATH = $ENV{PERL_TCL_DL_PATH} || $ENV{PERL_TCL_DLL} || "";
 }
 
-Tcl->bootstrap($Tcl::VERSION);
+use Config;
+my $path;
+if ($^O eq 'darwin') {
+ # Darwin 7.9 (OS X 10.3) requires the path of the executable be prepended
+ # for #! scripts to operate properly (avoids RegisterProcess error).
+ unless (grep { $_ eq $Config{binexp} } split $Config{path_sep}, $ENV{PATH}) {
+ $path = join $Config{path_sep}, $Config{binexp}, $ENV{PATH};
+ }
+}
+
+{
+ local $ENV{PATH} = $path if $path;
+ Tcl->bootstrap($Tcl::VERSION);
+}
 
 END {
     Tcl::_Finalize();
