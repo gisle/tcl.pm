@@ -1011,6 +1011,8 @@ Tcl_Eval(interp, script, flags = 0)
 	prepare_Tcl_result(aTHX_ interp, "Tcl::Eval");
 	SPAGAIN;
 
+#ifdef HAVE_TKINIT
+
 char*
 Tcl_SetPreInitScript(script)
 	char *	script
@@ -1051,6 +1053,8 @@ Tcl_GetEncoding(interp, enc)
     PPCODE:
 	if (!initialized) { return; }
 	Tcl_GetEncoding(interp,enc);
+
+#endif /* HAVE_TKINIT */
 
 void
 Tcl_EvalFile(interp, filename)
