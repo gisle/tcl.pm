@@ -1,3 +1,18 @@
+2006-10-03  Vadim Konovalov
+
+	* Tcl.xs: new renamed to _new;
+	for Win32+HAVE_TKINIT+!USE_STUBS minimal DllMain introduced
+	HAVE_DDEINIT, HAVE_BLTINIT introduced
+	new Tcl C interface for Tcl_SetPreInitScript, TclpInitLibraryPath,
+	Tcl_SetDefaultEncodingDir, Tcl_GetDefaultEncodingDir, Tcl_GetEncoding
+	remove never-working Tcl_perl_detach, Tcl_perl_attach
+	* Tcl.pm: replace DynaLoader with XSLoader
+	remove bogus insecure C<do"$Tcl::config::tcl_pm_path/Tcl.cfg">
+	insert fresh "use Tclaux;" bootstrap helper
+	"use Carp;" only when "require"-ed
+	sub new - direct call to XS variant _new
+	version now is 0.90
+
 2006-08-23  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.pm: replace 'use Config' with less invasive 'require Config'.
