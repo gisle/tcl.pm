@@ -1,6 +1,5 @@
 Changes
 ChangeLog
-create-moveable-dist.pl helper script to create configurations with supplied Tcl/Tk
 Makefile.PL		Tcl extension makefile writer
 MANIFEST		This list of files
 README			Introduction to the Tcl extension
@@ -18,3 +17,4 @@ t/unicode.t		some unicode tests
 t/var.t			See if access to/from Tcl variables works
 typemap			Tcl extension types
 tclcfg.tcl		Tcl script to discover TCL installation options
+META.yml                                 Module meta-data (added by MakeMaker)

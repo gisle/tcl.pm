@@ -1,3 +1,10 @@
+2006-11-11  Vadim Konovalov
+
+	* Tcl.pm: remove mention of create-moveable-dist.pl
+	* Makefile.PL: --no-usestubs was actually ignore; fix this
+	* Manifest: remove mention of create-moveable-dist.pl
+	CPAN release
+
 2006-10-03  Vadim Konovalov
 
 	* Tcl.xs: new renamed to _new;

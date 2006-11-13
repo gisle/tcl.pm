@@ -75,7 +75,6 @@ or for expert compilation:
 
 EOT
 
-
 if (defined $Cross::platform) {
     # All appropriate environment variables shoult be set properly, such
     # as OSVERSION, PLATFORM, WCEROOT, SDKROOT. This is usually done with
@@ -107,7 +106,7 @@ if ($usestubs) {
 
 if (defined($libpath) && defined($incpath)) {
     # do nothing - set on command line
-} elsif (!defined($tclconfig) && defined($arch)) {
+} elsif (!defined($tclconfig) && defined($arch) && $usestubs) {
     $incpath = "-Itcl-core/include";
     $libpath = "-Ltcl-core/$arch -l$stub";
     if ($^O eq 'darwin') {

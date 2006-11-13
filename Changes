@@ -1,5 +1,12 @@
 Revision history for Perl extension Tcl.
 
+0.90	2006-11-11
+
+	- more Darwin support
+	- move 'new' method to Tcl.pm
+	- replace DynaLoader with XSLoader, Tcl is no more ISA-DynaLoader
+	- removed bogus insecure do"$Tcl::config::tcl_pm_path/Tcl.cfg"
+
 0.89    23-may-2006
 	- Binary stub archives for various platforms to allow building the
 	Tcl module without any Tcl distribution on the system.

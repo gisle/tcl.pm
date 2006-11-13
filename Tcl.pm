@@ -342,37 +342,11 @@ During compiling Tcl Perl module, Tcl/Tk could be statically linked into
 module's shared library and all other files zipped into a single archive, so
 each file extracted when needed.
 
-=back
-
-Some global variables within $Tcl::config:: namespace are used to make
-such installations possible.
-
-=head3 First method
-
-=head3 Second method
-
-To use second approach, desired set of Tcl/Tk binaries should be prepared
-in a single directory. Mostly these files could be files from existing Tcl/Tk
-installation.
-
-Use C<create-moveable-dist.pl> script to create proper configuration this way.
-
-From inmplementation side of view, following things are done in this way:
-
-=over
-
-=item * Entire Tcl/Tk directory is copied into C<blib/lib>
-
-=item * Tcl.cfg file is created at the same dir where Tcl.pm is placed; this
-file contain some configuration and a code to initially load Tcl shared library.
-
-=back 
-
-=head3 Third method
-
 To link Tcl/Tk binaries, prepare their libraries and then instruct Makefile.PL
 to use these libraries in a link stage.
 (TODO provide better detailed description) 
+
+=back
 
 =head1 AUTHORS
 
