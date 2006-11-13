@@ -1,3 +1,10 @@
+2006-11-13  Vadim Konovalov
+
+	* Tcl.pm: Version 0.91
+	* MANIFEST: list tcl-core directory for stubs
+	* Makefile.PL: --usestubs is no by default
+	CPAN release
+
 2006-11-11  Vadim Konovalov
 
 	* Tcl.pm: remove mention of create-moveable-dist.pl

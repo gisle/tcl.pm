@@ -13,7 +13,7 @@ use Config;
 my $tclsh = 'tclsh';
 my $tclconfig;
 my $buildspec;
-my $usestubs = 1;
+my $usestubs = 0;
 my $libpath;
 my $incpath;
 my $defs = "";

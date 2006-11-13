@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl.
 
+0.91	2006-11-13
+
+	--usestubs is no by default
+
 0.90	2006-11-11
 
 	- more Darwin support
