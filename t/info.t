@@ -11,7 +11,14 @@ use File::Spec::Functions;
 my $tcl = Tcl->new;
 
 ok($tcl);
-ok(canonpath($tcl->Eval("info nameofexecutable")), canonpath($^X));
+if ($^O eq 'cygwin') {
+    my $cpath = $tcl->Eval("info nameofexecutable");
+    $cpath = `cygpath -u '$cpath'`;
+    chomp($cpath);
+    ok($cpath, canonpath($^X));
+} else {
+    ok(canonpath($tcl->Eval("info nameofexecutable")), canonpath($^X));
+}
 ok($tcl->Eval("info exists tcl_platform"), 1);
 
 my $tclversion = $tcl->Eval("info tclversion");

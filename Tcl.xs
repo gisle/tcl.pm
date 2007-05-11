@@ -1469,7 +1469,7 @@ Tcl_CreateCommand(interp,cmdName,cmdProc,clientData=&PL_sv_undef,deleteProc=Null
 	if (!initialized) { return; }
 	if (SvIOK(cmdProc))
 	    Tcl_CreateCommand(interp, cmdName, (Tcl_CmdProc *) SvIV(cmdProc),
-			      (ClientData) SvIV(clientData), NULL);
+			      INT2PTR(ClientData, SvIV(clientData)), NULL);
 	else {
 	    AV *av = (AV *) SvREFCNT_inc((SV *) newAV());
 	    av_store(av, 0, newSVsv(cmdProc));
@@ -1662,7 +1662,7 @@ FETCH(av, key = NULL)
 	sv = *av_fetch(av, 0, FALSE);
 	if (sv_derived_from(sv, "Tcl")) {
 	    IV tmp = SvIV((SV *) SvRV(sv));
-	    interp = (Tcl) tmp;
+	    interp = INT2PTR(Tcl, tmp);
 	}
 	else {
 	    croak("bad object passed to Tcl::Var::FETCH");
@@ -1696,7 +1696,7 @@ STORE(av, sv1, sv2 = NULL)
 	sv = *av_fetch(av, 0, FALSE);
 	if (sv_derived_from(sv, "Tcl")) {
 	    IV tmp = SvIV((SV *) SvRV(sv));
-	    interp = (Tcl) tmp;
+	    interp = INT2PTR(Tcl, tmp);
 	}
 	else
 	    croak("bad object passed to Tcl::Var::STORE");

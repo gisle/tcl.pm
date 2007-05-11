@@ -42,6 +42,8 @@ if ($^O eq "MSWin32") {
     $arch = "$^O-i686" if ($Config{archname} =~ /i\d86/);
     $arch = "$^O-ia64" if ($Config{archname} =~ /ia64/i);
     $arch = "$^O-x86_64" if ($Config{archname} =~ /x86_64/);
+} elsif ($^O eq "cygwin") {
+    $tclconfig = '/usr/lib/tclConfig.sh';
 }
 
 GetOptions("tclsh=s", \$tclsh,         # Use this tclsh executable as a

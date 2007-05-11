@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl.
 
+0.95	2007-??-??
+
+	- configuration cygwin help from Jerry D. Hedden
+
 0.91	2006-11-13
 
 	--usestubs is no by default

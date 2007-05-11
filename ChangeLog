@@ -1,3 +1,11 @@
+2007-09-11  Vadim Konovalov
+
+	* Tcl.pm: Version 0.95
+	* Makefile.PL: cygwin fix from Jerry D. Hedden
+	* Tcl.xs: cygwin improvement from Jerry D. Hedden
+	* t/info.t: cygwin fix from Jerry D. Hedden
+	* Changes: mention new release
+
 2006-11-13  Vadim Konovalov
 
 	* Tcl.pm: Version 0.91
