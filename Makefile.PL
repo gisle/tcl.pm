@@ -183,7 +183,7 @@ if (defined($libpath) && defined($incpath)) {
 	    $tclver=~s/\.//;
 	    $defs .= " -DTCL_LIB_FILE=\\\"tcl$tclver.dll\\\"" if $usestubs; 
 	}
-	elsif ($^O eq 'freebsd') {
+	elsif ($^O eq 'FreeBSD') {
 	    $tclver=~s/\.//;
 	    $tclsh=~/([\d.]+)$/ and $incpath .= " -I/usr/local/include/tcl$1";
 	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.so\\\"" if $usestubs; 
