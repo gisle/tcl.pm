@@ -1,3 +1,11 @@
+2008-09-07  Vadim Konovalov
+
+	* Tcl.pm: Version 0.97
+	* Makefile.PL: --usestubs default on linux (--nousestubs has
+	twisted and broken guesses on linux)
+	also, avoid fake FAIL on CPAN due to design bug on smokers
+	* Changes: mention new release
+
 2008-01-04  Jeff Hobbs  <jeffh@ActiveState.com>
 
 	* Tcl.xs (NpLoadLibrary): add dlerror warning to improve info when

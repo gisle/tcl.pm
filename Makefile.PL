@@ -13,7 +13,7 @@ use Config;
 my $tclsh = 'tclsh';
 my $tclconfig;
 my $buildspec;
-my $usestubs = 0;
+my $usestubs = ($^O eq 'MSWin32' ? 0 : 1);
 my $libpath;
 my $incpath;
 my $defs = "";
@@ -46,6 +46,14 @@ if ($^O eq "MSWin32") {
     $tclconfig = '/usr/lib/tclConfig.sh';
 }
 
+sub _die ($) {
+    # now CPAN smokers report FAIL if Makefile.PL dies, it
+    # should exit with status 0
+    my $err = shift;
+    warn $err;
+    exit 0;
+}
+
 GetOptions("tclsh=s", \$tclsh,         # Use this tclsh executable as a
                                        # base to find the lib info needed
 	   "tclconfig=s", \$tclconfig, # Use the specified Tcl config file
@@ -60,7 +68,7 @@ GetOptions("tclsh=s", \$tclsh,         # Use this tclsh executable as a
 	   "include=s", \$incpath,     # Use this specific include path
 	   "define=s", \$defs,         # Use this specific set of defines
 	  )
-    || die <<EOT;
+    || _die <<EOT;
 
 Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>]
                         [--buildspec] [--nousestubs] [<makemaker opts>...]
@@ -117,13 +125,13 @@ if (defined($libpath) && defined($incpath)) {
     }
 } elsif ($tclconfig || $^O eq 'darwin') {
     unless ($tclconfig) {
-       open(TCLSH, "$tclsh tclcfg.tcl |") or die "error starting tclsh: $!\n";
+       open(TCLSH, "$tclsh tclcfg.tcl |") or _die "error starting tclsh: $!\n";
        my $tclcfg = join '', <TCLSH>;
        close(TCLSH);
        my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)\n/gm;
        $tclconfig = $tclcfg{'tclConfig.sh'};
     }
-    die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
+    _die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
 
     # Retrieve all info based on tclConfig.sh
     my $variant    = ($usestubs ? "_STUB" : "");
@@ -131,7 +139,7 @@ if (defined($libpath) && defined($incpath)) {
     my $libspecvar = "TCL${variant}_LIB_SPEC";
     my %tclcfg;
     process_tclconfig($tclconfig, \%tclcfg);
-    die "Tcl requires Tcl v8.4 or greater, found '$tclcfg{TCL_VERSION}'\n"
+    _die "Tcl requires Tcl v8.4 or greater, found '$tclcfg{TCL_VERSION}'\n"
 	unless (defined $tclcfg{'TCL_VERSION'}
 		&& $tclcfg{'TCL_VERSION'} >= 8.4);
     $libpath = $tclcfg{$libspecvar};
@@ -151,7 +159,7 @@ if (defined($libpath) && defined($incpath)) {
 	}
     }
 } else {
-    open(TCLSH, "$tclsh tclcfg.tcl |") or die "error starting tclsh: $!\n";
+    open(TCLSH, "$tclsh tclcfg.tcl |") or _die "error starting tclsh: $!\n";
     my $tclcfg = join '', <TCLSH>;
     close(TCLSH);
     print $tclcfg;
@@ -170,7 +178,7 @@ if (defined($libpath) && defined($incpath)) {
 
 	# currently version must be 8.4+
 	my ($vmaj,$vmin) = ($tclver =~ /^(\d+)\.(\d+)/);
-	die "Tcl requires Tcl v8.4 or greater, found '$vmaj.$vmin'\n"
+	_die "Tcl requires Tcl v8.4 or greater, found '$vmaj.$vmin'\n"
 	    if ($vmaj < 8 || ($vmaj == 8 && $vmin < 4));
 
 	if ($tclcfg{tcl_library} =~ /^(.*)[\\\/]lib[\\\/]/) {
@@ -233,7 +241,7 @@ sub process_tclconfig {
     my $hashref   = shift;
 
     open(TCLSH, $tclconfig)
-	or die "error opening file '$tclconfig': $!\n";
+	or _die "error opening file '$tclconfig': $!\n";
     print "Using config data in $tclconfig\n";
     my $tclcfg = join '', <TCLSH>;
     close(TCLSH);

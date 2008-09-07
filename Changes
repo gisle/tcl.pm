@@ -1,5 +1,10 @@
 Revision history for Perl extension Tcl.
 
+0.97	2008-09-07
+
+	- --usestubs default on linux
+	- Makefile.PL should exit with status 0 on error
+
 0.95	2007-06-07
 
 	- configuration cygwin help from Jerry D. Hedden
