@@ -1,3 +1,8 @@
+2009-02-18  Jeff Hobbs  <jeffh@ActiveState.com>
+
+	* tcl-core/win32-x86_64/tclstub84.lib: add Win64 stub library.
+	Actually from 8.5, but works in the build setup.
+
 2008-09-07  Vadim Konovalov
 
 	* Tcl.pm: Version 0.97
