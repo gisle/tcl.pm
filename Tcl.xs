@@ -7,7 +7,6 @@
  * Copyright (c) 2003-2004, Vadim Konovalov
  * Copyright (c) 2004 ActiveState Corp., a division of Sophos PLC
  *
- * RCS: @(#) $Id$
  */
 
 #define PERL_NO_GET_CONTEXT     /* we want efficiency */
