@@ -3,3 +3,6 @@ Tcl.bs
 Tcl.c
 blib
 pm_to_blib
+*.o
+*.old
+*.tar.gz
