@@ -216,6 +216,8 @@ if ($^O eq 'darwin') {
     # darwin has a broken ranlib that requires you to run it anytime
     # you copy an archive file, so ensure ours it up-to-date
     system("ranlib tcl-core/$arch/libtclstub8.4.a");
+    system("git update-index --assume-unchanged tcl-core/$arch/libtclstub8.4.a")
+	if -d ".git";
     if ($libpath =~ /-framework/) {
 	# Frameworks require slightly different compile options
 	@extraargs = (dynamic_lib => {OTHERLDFLAGS => $libpath});
