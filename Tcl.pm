@@ -403,7 +403,7 @@ END {
 
 #TODO make better wording here
 # %anon_refs keeps track of anonymous subroutines that were created with
-# "CreateComand" method during process of transformation of arguments for
+# "CreateCommand" method during process of transformation of arguments for
 # "call" and other stuff such as scalar refs and so on.
 # (TODO -- find out how to check for refcounting and proper releasing of
 # resources)
