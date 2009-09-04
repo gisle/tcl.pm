@@ -193,7 +193,7 @@ for details.
 Returns the current Tcl interpreter result. List v. scalar context is
 handled as in I<Eval>() above.
 
-=item $interp->CreateCommand (CMDNAME, CMDPROC, CLIENTDATA, DELETEPROC)
+=item $interp->CreateCommand (CMDNAME, CMDPROC, CLIENTDATA, DELETEPROC, FLAGS)
 
 Binds a new procedure named CMDNAME into the interpreter. The
 CLIENTDATA and DELETEPROC arguments are optional. There are two cases:
@@ -215,6 +215,8 @@ interpeter, the arguments passed to the Perl sub CMDPROC are
 
 where INTERP is a Perl object for the Tcl interpreter which called out
 and LIST is a Perl list of the arguments CMDNAME was called with.
+If the 1-bit of FLAGS is set then the 3 first arguments on the call
+to CMDPROC are suppressed.
 As usual in Tcl, the first element of the list is CMDNAME itself.
 When CMDNAME is deleted from the interpreter (either explicitly with
 I<DeleteCommand> or because the destructor for the interpeter object
@@ -493,7 +495,6 @@ sub call {
 	    }
 	    $args[$argcnt] =
 		$interp->create_tcl_sub(sub {
-		    splice @_, 0, 3; # remove ClientData, Interp and CmdName
 		    $arg->[0]->(@_, @$arg[1..$#$arg]);
 		}, $events);
 	}
@@ -512,7 +513,6 @@ sub call {
 	    my $method_name = $arg->[1];
 	    $args[$argcnt] =
 		$interp->create_tcl_sub(sub {
-		    splice @_, 0, 3; # remove ClientData, Interp and CmdName
 		    $wid->$method_name(@$arg[2..$#$arg]);
 		}, $events);
 	}
@@ -525,7 +525,6 @@ sub call {
 		$arg = $args[$argcnt+1];
 		$args[$argcnt] =
 		    $interp->create_tcl_sub(sub {
-			splice @_, 0, 3; # remove ClientData, Interp and CmdName
 			$arg->[0]->(@_, @$arg[1..$#$arg]);
 		    }, $events);
 	    }
@@ -628,7 +627,7 @@ sub create_tcl_sub {
     }
     unless (exists $anon_refs{$tclname}) {
 	$anon_refs{$tclname} = $sub;
-	$interp->CreateCommand($tclname, $sub);
+	$interp->CreateCommand($tclname, $sub, undef, undef, 1);
     }
     if ($events) {
 	# Add any %-substitutions to callback

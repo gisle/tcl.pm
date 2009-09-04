@@ -810,6 +810,7 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
     AV *av = (AV *) clientData;
     I32 count;
     SV *sv;
+    int flag;
     int rc;
 
     /*
@@ -817,21 +818,32 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
      * (where $deleteProc is optional but we don't need it here anyway)
      */
 
-    if (AvFILL(av) != 2 && AvFILL(av) != 3)
+    if (AvFILL(av) != 3 && AvFILL(av) != 4)
 	croak("bad clientdata argument passed to Tcl_PerlCallWrapper");
+
+    flag = SvIV(*av_fetch(av, 3, FALSE));
 
     ENTER;
     SAVETMPS;
 
     PUSHMARK(sp);
-    EXTEND(sp, objc + 2);
-    /*
-     * Place clientData and original interp on the stack, then the
-     * Tcl object invoke list, including the command name.  Users
-     * who only want the args from Tcl can splice off the first 3 args
-     */
-    PUSHs(sv_mortalcopy(*av_fetch(av, 1, FALSE)));
-    PUSHs(sv_mortalcopy(*av_fetch(av, 2, FALSE)));
+    if (flag & 1) {
+	if (objc) {
+	    objc--;
+	    objv++;
+	    EXTEND(sp, objc);
+	}
+    }
+    else {
+	EXTEND(sp, objc + 2);
+	/*
+	 * Place clientData and original interp on the stack, then the
+	 * Tcl object invoke list, including the command name.  Users
+	 * who only want the args from Tcl can splice off the first 3 args
+	 */
+	PUSHs(sv_mortalcopy(*av_fetch(av, 1, FALSE)));
+	PUSHs(sv_mortalcopy(*av_fetch(av, 2, FALSE)));
+    }
     while (objc--) {
 	PUSHs(sv_2mortal(SvFromTclObj(aTHX_ *objv++)));
     }
@@ -881,16 +893,16 @@ Tcl_PerlCallDeleteProc(ClientData clientData)
      * (where $deleteProc is optional but we don't need it here anyway)
      */
 
-    if (AvFILL(av) == 3) {
+    if (AvFILL(av) == 4) {
 	dSP;
 
 	PUSHMARK(sp);
 	EXTEND(sp, 1);
 	PUSHs(sv_mortalcopy(*av_fetch(av, 1, FALSE)));
 	PUTBACK;
-	(void) perl_call_sv(*av_fetch(av, 3, FALSE), G_SCALAR|G_DISCARD);
+	(void) perl_call_sv(*av_fetch(av, 4, FALSE), G_SCALAR|G_DISCARD);
     }
-    else if (AvFILL(av) != 2) {
+    else if (AvFILL(av) != 3) {
 	croak("bad clientdata argument passed to Tcl_PerlCallDeleteProc");
     }
 
@@ -1464,12 +1476,13 @@ Tcl_DoOneEvent(interp, flags)
 	RETVAL
 
 void
-Tcl_CreateCommand(interp,cmdName,cmdProc,clientData=&PL_sv_undef,deleteProc=Nullsv)
+Tcl_CreateCommand(interp,cmdName,cmdProc,clientData=&PL_sv_undef,deleteProc=&PL_sv_undef,flags=0)
 	Tcl	interp
 	char *	cmdName
 	SV *	cmdProc
 	SV *	clientData
 	SV *	deleteProc
+	int     flags
     CODE:
 	if (!initialized) { return; }
 	if (SvIOK(cmdProc))
@@ -1480,8 +1493,9 @@ Tcl_CreateCommand(interp,cmdName,cmdProc,clientData=&PL_sv_undef,deleteProc=Null
 	    av_store(av, 0, newSVsv(cmdProc));
 	    av_store(av, 1, newSVsv(clientData));
 	    av_store(av, 2, newSVsv(ST(0)));
-	    if (deleteProc) {
-		av_store(av, 3, newSVsv(deleteProc));
+	    av_store(av, 3, newSViv(flags));
+	    if (SvOK(deleteProc)) {
+		av_store(av, 4, newSVsv(deleteProc));
 	    }
 	    Tcl_CreateObjCommand(interp, cmdName, Tcl_PerlCallWrapper,
 		    (ClientData) av, Tcl_PerlCallDeleteProc);
