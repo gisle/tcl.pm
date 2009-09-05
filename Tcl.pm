@@ -11,7 +11,7 @@ Tcl - Tcl extension module for Perl
 
     use Tcl;
 
-    $interp = new Tcl;
+    $interp = Tcl->new;
     $interp->Eval('puts "Hello world"');
 
 =head1 DESCRIPTION
@@ -20,18 +20,24 @@ The Tcl extension module gives access to the Tcl library with
 functionality and interface similar to the C functions of Tcl.
 In other words, you can
 
-=over 8
+=over
 
-=item create Tcl interpreters
+=item *
+
+create Tcl interpreters
 
 The Tcl interpreters so created are Perl objects whose destructors
 delete the interpreters cleanly when appropriate.
 
-=item execute Tcl code in an interpreter
+=item *
+
+execute Tcl code in an interpreter
 
 The code can come from strings, files or Perl filehandles.
 
-=item bind in new Tcl procedures
+=item *
+
+bind in new Tcl procedures
 
 The new procedures can be either C code (with addresses presumably
 obtained using I<dl_open> and I<dl_find_symbol>) or Perl subroutines
@@ -40,11 +46,17 @@ callback in the latter case is another perl subroutine which is called
 when the command is explicitly deleted by name or else when the
 destructor for the interpreter object is explicitly or implicitly called.
 
-=item Manipulate the result field of a Tcl interpreter
+=item *
 
-=item Set and get values of variables in a Tcl interpreter
+Manipulate the result field of a Tcl interpreter
 
-=item Tie perl variables to variables in a Tcl interpreter
+=item *
+
+Set and get values of variables in a Tcl interpreter
+
+=item *
+
+Tie perl variables to variables in a Tcl interpreter
 
 The variables can be either scalars or hashes.
 
@@ -54,18 +66,18 @@ The variables can be either scalars or hashes.
 
 To create a new Tcl interpreter, use
 
-    $i = new Tcl;
+    $interp = Tcl->new;
 
 The following methods and routines can then be used on the Perl object
 returned (the object argument omitted in each case).
 
-=over 8
+=over
 
-=item Init ()
+=item $interp->Init ()
 
 Invoke I<Tcl_Init> on the interpeter.
 
-=item Eval (STRING, FLAGS)
+=item $interp->Eval (STRING, FLAGS)
 
 Evaluate script STRING in the interpreter. If the script returns
 successfully (TCL_OK) then the Perl return value corresponds to Tcl
@@ -77,23 +89,23 @@ then the result is split as a Tcl list and returned as a Perl list.
 The FLAGS field is optional and can be a bitwise OR of the constants
 Tcl::EVAL_GLOBAL or Tcl::EVAL_DIRECT.
 
-=item GlobalEval (STRING)
+=item $interp->GlobalEval (STRING)
 
 REMOVED.  Evalulate script STRING at global level.
 Call I<Eval>(STRING, Tcl::EVAL_GLOBAL) instead.
 
-=item EvalFile (FILENAME)
+=item $interp->EvalFile (FILENAME)
 
 Evaluate the contents of the file with name FILENAME. Otherwise, the
 same as I<Eval>() above.
 
-=item EvalFileHandle (FILEHANDLE)
+=item $interp->EvalFileHandle (FILEHANDLE)
 
 Evaluate the contents of the Perl filehandle FILEHANDLE. Otherwise, the
 same as I<Eval>() above. Useful when using the filehandle DATA to tack
 on a Tcl script following an __END__ token.
 
-=item call (PROC, ARG, ...)
+=item $interp->call (PROC, ARG, ...)
 
 Looks up procedure PROC in the interpreter and invokes it using Tcl's eval
 semantics that does command tracing and will use the ::unknown (AUTOLOAD)
@@ -128,18 +140,18 @@ subroutine.  Example:
   }
   $widget->bind('<2>', [\&textPaste, Tcl::Ev('%x', '%y'), $widget] );
 
-=item return_ref (NAME)
+=item $interp->return_ref (NAME)
 
 returns a reference corresponding to NAME, which was associated during
-previously called C<< $int->call(...) >> preprocessing. As a typical
+previously called C<< $interpnt->call(...) >> preprocessing. As a typical
 example this could be variable associated with a widget.
 
-=item delete_ref (NAME)
+=item $interp->delete_ref (NAME)
 
 deletes and returns a reference corresponding to NAME, which was associated
-during previously called C<< $int->call(...) >> preprocessing.
+during previously called C<< $interpnt->call(...) >> preprocessing.
 
-=item icall (PROC, ARG, ...)
+=item $interp->icall (PROC, ARG, ...)
 
 Looks up procedure PROC in the interpreter and invokes it using Tcl's eval
 semantics that does command tracing and will use the ::unknown (AUTOLOAD)
@@ -152,7 +164,7 @@ are converted efficiently from Perl SVs to Tcl_Objs.  A Perl AV array
 becomes a Tcl_ListObj, an SvIV becomes a Tcl_IntObj, etc.  The reverse
 conversion is done to the result.
 
-=item invoke (PROC, ARG, ...)
+=item $interp->invoke (PROC, ARG, ...)
 
 Looks up procedure PROC in the interpreter and invokes it directly with
 arguments (ARG, ...) without passing through the Tcl parser. For example,
@@ -176,12 +188,12 @@ that the 'call' method will recognize when it is passed as the first
 argument to a subroutine in a callback.  See description of 'call' method
 for details.
 
-=item result ()
+=item $interp->result ()
 
 Returns the current Tcl interpreter result. List v. scalar context is
 handled as in I<Eval>() above.
 
-=item CreateCommand (CMDNAME, CMDPROC, CLIENTDATA, DELETEPROC)
+=item $interp->CreateCommand (CMDNAME, CMDPROC, CLIENTDATA, DELETEPROC)
 
 Binds a new procedure named CMDNAME into the interpreter. The
 CLIENTDATA and DELETEPROC arguments are optional. There are two cases:
@@ -208,7 +220,7 @@ When CMDNAME is deleted from the interpreter (either explicitly with
 I<DeleteCommand> or because the destructor for the interpeter object
 is called), it is passed the single argument CLIENTDATA.
 
-=item DeleteCommand (CMDNAME)
+=item $interp->DeleteCommand (CMDNAME)
 
 Deletes command CMDNAME from the interpreter. If the command was created
 with a DELETEPROC (see I<CreateCommand> above), then it is invoked at
@@ -216,57 +228,57 @@ this point. When a Tcl interpreter object is destroyed either explicitly
 or implicitly, an implicit I<DeleteCommand> happens on all its currently
 registered commands.
 
-=item SetResult (STRING)
+=item $interp->SetResult (STRING)
 
 Sets Tcl interpreter result to STRING.
 
-=item AppendResult (LIST)
+=item $interp->AppendResult (LIST)
 
 Appends each element of LIST to Tcl's interpreter result object.
 
-=item AppendElement (STRING)
+=item $interp->AppendElement (STRING)
 
 Appends STRING to Tcl interpreter result object as an extra Tcl list element.
 
-=item ResetResult ()
+=item $interp->ResetResult ()
 
 Resets Tcl interpreter result.
 
-=item SplitList (STRING)
+=item $interp->SplitList (STRING)
 
 Splits STRING as a Tcl list. Returns a Perl list or the empty list if
 there was an error (i.e. STRING was not a properly formed Tcl list).
 In the latter case, the error message is left in Tcl's interpreter
 result object.
 
-=item SetVar (VARNAME, VALUE, FLAGS)
+=item $interp->SetVar (VARNAME, VALUE, FLAGS)
 
 The FLAGS field is optional. Sets Tcl variable VARNAME in the
 interpreter to VALUE. The FLAGS argument is the usual Tcl one and
 can be a bitwise OR of the constants Tcl::GLOBAL_ONLY,
 Tcl::LEAVE_ERR_MSG, Tcl::APPEND_VALUE, Tcl::LIST_ELEMENT.
 
-=item SetVar2 (VARNAME1, VARNAME2, VALUE, FLAGS)
+=item $interp->SetVar2 (VARNAME1, VARNAME2, VALUE, FLAGS)
 
 Sets the element VARNAME1(VARNAME2) of a Tcl array to VALUE. The optional
 argument FLAGS behaves as in I<SetVar> above.
 
-=item GetVar (VARNAME, FLAGS)
+=item $interp->GetVar (VARNAME, FLAGS)
 
 Returns the value of Tcl variable VARNAME. The optional argument FLAGS
 behaves as in I<SetVar> above.
 
-=item GetVar2 (VARNAME1, VARNAME2, FLAGS)
+=item $interp->GetVar2 (VARNAME1, VARNAME2, FLAGS)
 
 Returns the value of the element VARNAME1(VARNAME2) of a Tcl array.
 The optional argument FLAGS behaves as in I<SetVar> above.
 
-=item UnsetVar (VARNAME, FLAGS)
+=item $interp->UnsetVar (VARNAME, FLAGS)
 
 Unsets Tcl variable VARNAME. The optional argument FLAGS
 behaves as in I<SetVar> above.
 
-=item UnsetVar2 (VARNAME1, VARNAME2, FLAGS)
+=item $interp->UnsetVar2 (VARNAME1, VARNAME2, FLAGS)
 
 Unsets the element VARNAME1(VARNAME2) of a Tcl array.
 The optional argument FLAGS behaves as in I<SetVar> above.
@@ -324,19 +336,25 @@ location.
 
 =over
 
-=item * First method
+=item *
+
+First method
 
 Install Tcl/Tk first, then install Perl module Tcl, so installed Tcl/Tk will
 be used. This is most normal approach, and no care of Tcl/Tk distribution is
 taken on Perl side (this is done on Tcl/Tk side)
 
-=item * Second method
+=item *
+
+Second method
 
 Copy installed Tcl/Tk binaries to some location, then install Perl module Tcl
 with a special action to make Tcl.pm know of this location. This approach
 makes sure that only chosen Tcl installation is used.
 
-=item * Third method
+=item *
+
+Third method
 
 During compiling Tcl Perl module, Tcl/Tk could be statically linked into
 module's shared library and all other files zipped into a single archive, so
