@@ -30,3 +30,4 @@ tcl-core/linux-x86_64/libtclstub8.4.a
 tcl-core/solaris-sparc/libtclstub8.4.a
 tcl-core/solaris-x86/libtclstub8.4.a
 tcl-core/win32-x86/tclstub84.lib
+tcl-core/win32-x64/tclstub84.lib

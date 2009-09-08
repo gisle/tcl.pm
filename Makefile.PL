@@ -25,9 +25,12 @@ my $arch;
 my $stub = "tclstub8.4";
 
 # These need updating as more platforms are added to tcl-core/ area
-if ($^O eq "MSWin32") {
+if ($^O eq "aix") {
+    $arch = "aix";
+} elsif ($^O eq "MSWin32") {
     $stub = "tclstub84";
     $arch = "win32-x86" if ($Config{archname} =~ /-x86-/);
+    $arch = "win32-x64" if ($Config{archname} =~ /-x64-/);
 } elsif ($^O eq "darwin") {
     $arch = "darwin-universal";
 } elsif ($^O eq "solaris") {
@@ -44,6 +47,9 @@ if ($^O eq "MSWin32") {
     $arch = "$^O-x86_64" if ($Config{archname} =~ /x86_64/);
 } elsif ($^O eq "cygwin") {
     $tclconfig = '/usr/lib/tclConfig.sh';
+} elsif ($^O eq "solaris") {
+    $arch = "$^O-x86" if ($Config{archname} =~ /[ix]86/);
+    $arch = "$^O-sparc" if ($Config{archname} =~ /sun4/);
 }
 
 sub _die ($) {
