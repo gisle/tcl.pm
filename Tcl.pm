@@ -391,6 +391,18 @@ unless (defined $DL_PATH) {
     $DL_PATH = $ENV{PERL_TCL_DL_PATH} || $ENV{PERL_TCL_DLL} || "";
 }
 
+unless ($DL_PATH) {
+    require Config;
+    for my $inc (@INC) {
+        my $tkkit = "$inc/auto/Tcl/tkkit.$Config::Config{so}";
+        if (-f $tkkit) {
+            $DL_PATH = $tkkit;
+            last;
+        }
+    }
+}
+
+
 my $path;
 if ($^O eq 'darwin') {
  # Darwin 7.9 (OS X 10.3) requires the path of the executable be prepended
