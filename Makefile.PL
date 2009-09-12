@@ -235,6 +235,15 @@ if ($^O eq 'darwin') {
 WriteMakefile(
     NAME => "Tcl",
     VERSION_FROM => 'Tcl.pm',
+    LICENSE => 'perl',
+    MIN_PERL_VERSION => '5.008',
+    ABSTRACT_FROM => 'Tcl.pm',
+    META_MERGE => {
+        resources => {
+            repository => 'http://github.com/gisle/tcl.pm',
+            MailingList => 'mailto:tcltk@perl.org',
+        }
+    },
     LIBS => ["$libpath"],
     INC => "$incpath",
     DEFINE => $defs,
@@ -267,4 +276,26 @@ sub MY::libscan {
     my($self, $path) =@_;
     return '' if $path =~ /\.pl$/i;
     return $path;
+}
+
+BEGIN {
+    # compatibility with older versions of MakeMaker
+    my $developer = -f ".git";
+    my %mm_req = (
+        LICENCE => 6.31,
+        META_MERGE => 6.45,
+        META_ADD => 6.45,
+        MIN_PERL_VERSION => 6.48,
+    );
+    undef(*WriteMakefile);
+    *WriteMakefile = sub {
+        my %arg = @_;
+        for (keys %mm_req) {
+            unless (eval { ExtUtils::MakeMaker->VERSION($mm_req{$_}) }) {
+                warn "$_ $@" if $developer;
+                delete $arg{$_};
+            }
+        }
+        ExtUtils::MakeMaker::WriteMakefile(%arg);
+    };
 }
