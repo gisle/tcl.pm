@@ -1,5 +1,13 @@
 Revision history for Perl extension Tcl.
 
+0.98	2009-11-24
+
+	- moved to git
+	- Add flag to CreateCommand to suppress useless first 3 args
+	- documentation
+	- better tkkit.dll support
+	- Makefile.PL has better support for AIX, Solaris, Windows 64, darwin
+
 0.97	2008-09-07
 
 	- --usestubs default on linux
