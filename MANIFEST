@@ -1,5 +1,4 @@
 Changes
-ChangeLog
 Makefile.PL		Tcl extension makefile writer
 MANIFEST		This list of files
 README			Introduction to the Tcl extension
