@@ -128,7 +128,10 @@ code as:
   my $r = 'aaaa';
   button(".d", -textvariable => \$r, -command=>sub {$r++});
 
-3.  As a special case, there is a mechanism to deal with Tk's special event
+3. All references to hashes will be substituted with names of Tcl array
+variables transformed appropriately.
+
+4.  As a special case, there is a mechanism to deal with Tk's special event
 variables (they are mentioned as '%x', '%y' and so on throughout Tcl).
 When creating a subroutine reference that uses such variables, you must
 declare the desired variables using Tcl::Ev as the first argument to the
@@ -491,6 +494,24 @@ sub call {
 		tie $$arg, 'Tcl::Var', $interp, $nm;
 		$s = '' unless defined $s;
 		$$arg = $s;
+	    }
+	    $args[$argcnt] = $nm; # ... and substitute its name
+	}
+	elsif ($ref eq 'HASH') {
+	    # We have been passed something like \%hash
+	    # Create a tied variable between Tcl and Perl.
+
+	    # stringify hash ref, create in ::perl namespace on Tcl side
+	    # This will be HASH(0xXXXXXX) - leave it to become part of a
+	    # Tcl array.
+	    my $nm = "::perl::$arg";
+	    $nm =~ s/\W/_/g; # remove () from stringified name
+	    unless (exists $anon_refs{$nm}) {
+		$widget_refs{$current_widget}->{$nm}++;
+		$anon_refs{$nm} = $arg;
+		my %s = %$arg;
+		tie %$arg, 'Tcl::Var', $interp, $nm;
+		%$arg = %s;
 	    }
 	    $args[$argcnt] = $nm; # ... and substitute its name
 	}
