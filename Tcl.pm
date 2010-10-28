@@ -299,7 +299,7 @@ To tie a Perl scalar I<$scalar> to the Tcl variable I<tclscalar> in
 interpreter I<$interp> with optional flags I<$flags> (see I<SetVar>
 above), use
 
-	tie $scalar, Tcl::Var, $interp, "tclscalar", $flags;
+	tie $scalar, "Tcl::Var", $interp, "tclscalar", $flags;
 
 Omit the I<$flags> argument if not wanted.
 
@@ -307,7 +307,7 @@ To tie a Perl hash I<%hash> to the Tcl array variable I<array> in
 interpreter I<$interp> with optional flags I<$flags>
 (see I<SetVar> above), use
 
-	tie %hash, Tcl::Var, $interp, "array", $flags;
+	tie %hash, "Tcl::Var", $interp, "array", $flags;
 
 Omit the I<$flags> argument if not wanted. Any alteration to Perl
 variable I<$hash{"key"}> affects the Tcl variable I<array(key)>
