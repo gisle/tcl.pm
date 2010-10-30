@@ -504,8 +504,9 @@ sub call {
 	    # stringify hash ref, create in ::perl namespace on Tcl side
 	    # This will be HASH(0xXXXXXX) - leave it to become part of a
 	    # Tcl array.
-	    my $nm = "::perl::$arg";
+	    my $nm = $arg;
 	    $nm =~ s/\W/_/g; # remove () from stringified name
+	    $nm = "::perl::$nm";
 	    unless (exists $anon_refs{$nm}) {
 		$widget_refs{$current_widget}->{$nm}++;
 		$anon_refs{$nm} = $arg;
