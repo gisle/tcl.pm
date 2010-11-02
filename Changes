@@ -1,5 +1,10 @@
 Revision history for Perl extension Tcl.
 
+0.99	2010-11-02
+
+	- more 'stubs' platform binaries
+	- hashes also treated specially in $interp->call(...)
+
 0.98	2009-11-24
 
 	- moved to git

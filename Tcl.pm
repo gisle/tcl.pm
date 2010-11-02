@@ -1,6 +1,6 @@
 package Tcl;
 
-$Tcl::VERSION = '0.98';
+$Tcl::VERSION = '0.99';
 $Tcl::STACK_TRACE = 1;
 
 =head1 NAME
