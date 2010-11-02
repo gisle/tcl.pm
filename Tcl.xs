@@ -1039,14 +1039,16 @@ Tcl_SetPreInitScript(script)
     OUTPUT:
 	RETVAL
 
-char*
+void
 TclpInitLibraryPath(path)
 	char *	path
-    CODE:
+    PPCODE:
+	int lengthPtr=0;
+	Tcl_Encoding encodingPtr;
+
 	if (!initialized) { return; }
-	RETVAL = TclpInitLibraryPath(path);
-    OUTPUT:
-	RETVAL
+	/* interface to TclpInitLibraryPath changed between 8.4.x and 8.5.x */
+	TclpInitLibraryPath(&path, &lengthPtr, &encodingPtr);
 
 void
 Tcl_SetDefaultEncodingDir(script)
