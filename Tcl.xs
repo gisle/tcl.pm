@@ -139,6 +139,12 @@ DllMain(HINSTANCE hInst, DWORD reason, LPVOID reserved) {
 typedef Tcl_Interp *Tcl;
 typedef AV *Tcl__Var;
 
+#ifdef HAVE_TKINIT
+EXTERN char *		TclSetPreInitScript (char * string);
+void   TclpInitLibraryPath(char **valuePtr, int *lengthPtr, Tcl_Encoding *encodingPtr);
+EXTERN void		TkWinSetHINSTANCE (HINSTANCE hInstance);
+#endif
+
 #ifdef HAVE_BLTINIT
 extern Tcl_PackageInitProc Blt_Init, Blt_SafeInit;
 #endif
