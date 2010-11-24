@@ -1,5 +1,9 @@
 Revision history for Perl extension Tcl.
 
+1.00	2010-11-23
+
+	- 1.0 release
+
 0.99	2010-11-02
 
 	- more 'stubs' platform binaries
