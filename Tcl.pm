@@ -1,6 +1,6 @@
 package Tcl;
 
-$Tcl::VERSION = '1.00';
+$Tcl::VERSION = '1.01';
 $Tcl::STACK_TRACE = 1;
 
 =head1 NAME
@@ -370,20 +370,6 @@ to use these libraries in a link stage.
 (TODO provide better detailed description) 
 
 =back
-
-=head1 AUTHORS
-
-Malcolm Beattie, mbeattie@sable.ox.ac.uk, 23 Oct 1994.
-Vadim Konovalov, vkon@cpan.org, 19 May 2003.
-Jeff Hobbs, jeff (a) activestate . com, 22 Mar 2004.
-Gisle Aas, gisle (a) activestate . com, 14 Apr 2004.
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself.
-
-See http://www.perl.com/perl/misc/Artistic.html
 
 =cut
 
@@ -941,6 +927,22 @@ sub export_tcl_namespace {
     my $int = shift;
     $int->export_to_tcl(subs_from=>'tcl', vars_from=>'tcl');
 }
+
+=head1 AUTHORS
+
+ Malcolm Beattie, mbeattie@sable.ox.ac.uk, 23 Oct 1994.
+ Vadim Konovalov, vkon@cpan.org, 19 May 2003.
+ Jeff Hobbs, jeff (a) activestate . com, 22 Mar 2004.
+ Gisle Aas, gisle (a) activestate . com, 14 Apr 2004.
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
+
+See http://www.perl.com/perl/misc/Artistic.html
+
+=cut
 
 1;
 
