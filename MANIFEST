@@ -14,6 +14,7 @@ t/subclass.t		See if we can subclass Tcl
 t/trace.t		See if variable tarcing works
 t/unicode.t		some unicode tests
 t/var.t			See if access to/from Tcl variables works
+t/export_to_tcl.t	test convenience sub export_to_tcl
 typemap			Tcl extension types
 tclcfg.tcl		Tcl script to discover TCL installation options
 tcl-core/aix/libtclstub8.4.a

@@ -784,5 +784,163 @@ sub DESTROY {
 #    }
 #}
 
+
+=head1 Other Tcl interpreter methods
+
+=over 2
+
+=item export_to_tcl method
+
+An interpreter method, export_to_tcl, is used to expose a number of perl
+subroutines and variables all at once into tcl/tk.
+
+B<export_to_tcl> takes a hash as arguments, which represents named parameters,
+with following allowed values:
+
+=over 4
+
+=item B<namespace> => '...'
+
+tcl namespace, where commands and variables are to
+be created, defaults to 'perl'. If '' is specified - then global
+namespace is used. A possible '::' at end is stripped.
+
+=item B<subs> => { ... }
+
+anonymous hash of subs to be created in Tcl, in the form /tcl name/ => /code ref/
+
+=item B<vars> => { ... }
+
+anonymous hash of vars to be created in Tcl, in the form /tcl name/ => /code ref/
+
+=item B<subs_from> => '...'
+
+a name of Perl namespace, from where all existing subroutines will be searched
+and Tcl command will be created for each of them.
+
+=item B<vars_from> => '...'
+
+a name of Perl namespace, from where all existing variables will be searched,
+and each such variable will be tied to Tcl.
+
+=back
+
+An example:
+
+  use strict;
+  use Tcl;
+  
+  my $int = new Tcl;
+  
+  $tcl::foo = 'qwerty';
+  $int->export_to_tcl(subs_from=>'tcl',vars_from=>'tcl');
+  
+  $int->Eval(<<'EOS');
+  package require Tk
+  
+  button .b1 -text {a fluffy button} -command perl::fluffy_sub
+  button .b2 -text {a foo button} -command perl::foo
+  entry .e -textvariable perl::foo
+  pack .b1 .b2 .e
+  focus .b2
+  
+  tkwait window .
+  EOS
+  
+  sub tcl::fluffy_sub {
+      print "Hi, I am a fluffy sub\n";
+  }
+  sub tcl::foo {
+      print "Hi, I am foo\n";
+      $tcl::foo++;
+  }
+
+=cut
+
+sub export_to_tcl {
+    my $int = shift;
+    my %args = @_;
+
+    # name of Tcl package to hold tcl commands bound to perl subroutines
+    my $tcl_namespace = (exists $args{namespace} ? $args{namespace} : 'perl::');
+    $tcl_namespace=~s/(?:::)?$/::/;
+
+    # a batch of perl subroutines which tcl counterparts should be created
+    my $subs = $args{subs} || {};
+
+    # a batch of perl variables which tcl counterparts should be created
+    my $vars = $args{vars} || {};
+
+    # TBD:
+    # only => \@list_of_names
+    # argument to be able to limit the names to export to Tcl.
+
+    if (exists $args{subs_from}) {
+	# name of Perl package, which subroutines would be bound to tcl commands
+	my $subs_from = $args{subs_from};
+	$subs_from =~ s/::$//;
+	for my $name (keys %{"$subs_from\::"}) {
+	    #print STDERR "$name;\n";
+	    if (defined &{"$subs_from\::$name"}) {
+		if (exists $subs->{$name}) {
+		    next;
+		}
+		#print STDERR "binding sub '$name'\n";
+		$int->CreateCommand("$tcl_namespace$name", \&{"$subs_from\::$name"}, undef, undef, 1);
+	    }
+	}
+    }
+    if (exists $args{vars_from}) {
+	# name of Perl package, which subroutines would be bound to tcl commands
+	my $vars_from = $args{vars_from};
+	$vars_from =~ s/::$//;
+	for my $name (keys %{"$vars_from\::"}) {
+	    #print STDERR "$name;\n";
+	    if (defined ${"$vars_from\::$name"}) {
+		if (exists $vars->{$name}) {
+		    next;
+		}
+		#print STDERR "binding var '$name' in '$tcl_namespace'\n";
+		local $_ = ${"$vars_from\::$name"};
+		tie ${"$vars_from\::$name"}, 'Tcl::Var', $int, "$tcl_namespace$name";
+		${"$vars_from\::$name"} = $_;
+	    } 
+	    if (0) {
+		# array, hash - no need to do anything.
+		# (or should we?)
+	    }
+	}
+    }
+
+    for my $subname (keys %$subs) {
+	#print STDERR "binding2 sub '$subname'\n";
+        $int->CreateCommand("$tcl_namespace$subname",$subs->{$subname}, undef, undef, 1);
+    }
+
+    for my $varname (keys %$vars) {
+	#print STDERR "binding2 var '$varname'\n";
+	unless (ref($vars->{$varname})) {
+	    require 'Carp.pm';
+	    Carp::croak("should pass var ref as variable bind parameter");
+	}
+	local $_ = ${$vars->{$varname}};
+	tie ${$vars->{$varname}}, 'Tcl::Var', $int, "$tcl_namespace$varname";
+	${$vars->{$varname}} = $_;
+    }
+}
+
+=item B<export_tcl_namespace>
+
+extra convenience sub, binds to tcl all subs and vars from perl B<tcl::> namespace
+
+=back
+
+=cut
+
+sub export_tcl_namespace {
+    my $int = shift;
+    $int->export_to_tcl(subs_from=>'tcl', vars_from=>'tcl');
+}
+
 1;
 

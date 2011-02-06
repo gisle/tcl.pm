@@ -3,7 +3,6 @@
 use Test;
 BEGIN {plan tests=>4}
 use Tcl;
-use T;
 
 my $int = new Tcl;
 
