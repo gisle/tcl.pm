@@ -6,7 +6,7 @@ use Tcl;
 
 my $int = new Tcl;
 
-$tcl::foo = 'qwerty';
+$tcl::foo = $tcl::foo = 'qwerty';
 my $x = "some perl scalar var";
 
 $int->export_to_tcl(subs_from=>'tcl',vars_from=>'tcl');

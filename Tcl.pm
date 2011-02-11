@@ -1,6 +1,6 @@
 package Tcl;
 
-$Tcl::VERSION = '1.01';
+$Tcl::VERSION = '1.02';
 $Tcl::STACK_TRACE = 1;
 
 =head1 NAME
@@ -770,6 +770,7 @@ sub DESTROY {
 #    }
 #}
 
+package Tcl;
 
 =head1 Other Tcl interpreter methods
 
@@ -865,6 +866,7 @@ sub export_to_tcl {
 	# name of Perl package, which subroutines would be bound to tcl commands
 	my $subs_from = $args{subs_from};
 	$subs_from =~ s/::$//;
+	no strict 'refs';
 	for my $name (keys %{"$subs_from\::"}) {
 	    #print STDERR "$name;\n";
 	    if (defined &{"$subs_from\::$name"}) {
@@ -880,6 +882,7 @@ sub export_to_tcl {
 	# name of Perl package, which subroutines would be bound to tcl commands
 	my $vars_from = $args{vars_from};
 	$vars_from =~ s/::$//;
+	no strict 'refs';
 	for my $name (keys %{"$vars_from\::"}) {
 	    #print STDERR "$name;\n";
 	    if (defined ${"$vars_from\::$name"}) {
