@@ -2,7 +2,7 @@ NAME
     Tcl extension module for Perl5
 
 DESCRIPTION
-    
+
     The Tcl extension provides a small but complete interface into libtcl
     and any other Tcl-based library. It lets you create Tcl interpreters
     (as perl5 objects), bind in commands to them (either perl subroutines
@@ -21,21 +21,14 @@ script.
 
 2. perl Makefile.PL
    make
-
-3. Before installing, you can run the small test suite with
-   make test if you wish.
-
-4.  make install
-
-In rare case when you do cross-compiling for WinCE, you need to edit
-Makefile.PL to reflect your paths, and then invoke as
-  perl -MCross=[your-cross-name] Makefile.PL
+   make test
+   make install
 
 AUTHOR
     Malcolm Beattie	mbeattie@sable.ox.ac.uk
 
 MAINTAINERS
-    Vadim Konovalov	vkonovalov@peterstar.ru
+    Vadim Konovalov
     Jeff Hobbs
     Gisle Aas
 
@@ -56,4 +49,3 @@ LICENSE
 
 	      Copyright (c) 1994-1997, Malcolm Beattie
 			 All rights reserved.
-

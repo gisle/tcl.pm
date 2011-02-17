@@ -1,7 +1,6 @@
 package Tcl;
 
-$Tcl::VERSION = '1.02';
-$Tcl::STACK_TRACE = 1;
+$Tcl::VERSION = '1.03';
 
 =head1 NAME
 
@@ -422,23 +421,17 @@ END {
     Tcl::_Finalize();
 }
 
-#TODO make better wording here
-# %anon_refs keeps track of anonymous subroutines that were created with
-# "CreateCommand" method during process of transformation of arguments for
-# "call" and other stuff such as scalar refs and so on.
-# (TODO -- find out how to check for refcounting and proper releasing of
-# resources)
+# %anon_refs keeps track of anonymous subroutines and scalar/array/hash
+# references which are created on the fly for tcl/tk interchange
+# at a step when 'call' interpreter method prepares its arguments for
+# tcl/tk call, which is invoked by 'icall' interpreter method
+# (this argument transformation is done with "CreateCommand" method for
+# subs and with 'tie' for other)
 
 my %anon_refs;
 
-# %widget_refs is an array to hold refs that were created when working with
-# widget the point is - it's not dangerous to delete more than needed, because
-# those will be re-created at the very next time they needed.
-# however when widget goes away, it is good to delete anything that comes
-# into mind with that widget
-my %widget_refs;
-my $current_widget = '';
-sub _current_refs_widget {$current_widget=shift}
+# (TODO -- find out how to check for refcounting and proper releasing of
+# resources)
 
 # Subroutine "call" preprocess the arguments for special cases
 # and then calls "icall" (implemented in Tcl.xs), which invokes
@@ -452,17 +445,10 @@ sub call {
 	my $arg = $args[$argcnt];
 	my $ref = ref($arg);
 	next unless $ref;
-	if ($ref eq 'CODE') {
+	if ($ref eq 'CODE' || $ref eq 'Tcl::Code') {
 	    # We have been passed something like \&subroutine
 	    # Create a proc in Tcl that invokes this subroutine (no args)
 	    $args[$argcnt] = $interp->create_tcl_sub($arg);
-	    $widget_refs{$current_widget}->{$args[$argcnt]}++;
-	}
-	elsif ($ref =~ /^Tcl::Tk::Widget\b/) {
-	    # We have been passed a widget reference.
-	    # Convert to its Tk pathname (eg, .top1.fr1.btn2)
-	    $args[$argcnt] = $arg->path;
-	    $current_widget = $args[$argcnt] if $argcnt==0;
 	}
 	elsif ($ref eq 'SCALAR') {
 	    # We have been passed something like \$scalar
@@ -472,9 +458,7 @@ sub call {
 	    # This will be SCALAR(0xXXXXXX) - leave it to become part of a
 	    # Tcl array.
 	    my $nm = "::perl::$arg";
-	    #$nm =~ s/\W/_/g; # remove () from stringified name
 	    unless (exists $anon_refs{$nm}) {
-		$widget_refs{$current_widget}->{$nm}++;
 		$anon_refs{$nm} = $arg;
 		my $s = $$arg;
 		tie $$arg, 'Tcl::Var', $interp, $nm;
@@ -494,7 +478,6 @@ sub call {
 	    $nm =~ s/\W/_/g; # remove () from stringified name
 	    $nm = "::perl::$nm";
 	    unless (exists $anon_refs{$nm}) {
-		$widget_refs{$current_widget}->{$nm}++;
 		$anon_refs{$nm} = $arg;
 		my %s = %$arg;
 		tie %$arg, 'Tcl::Var', $interp, $nm;
@@ -550,7 +533,7 @@ sub call {
 	    }
 	    elsif (ref($args[$argcnt+1]) eq 'CODE') {
 		$args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$events);
-	    }
+            }
 	    else {
 		warn "not CODE/ARRAY expected after description of event fields";
 	    }
@@ -562,10 +545,13 @@ sub call {
     # A SvIV will become a Tcl_IntObj, ARRAY refs will become Tcl_ListObjs,
     # and so on.  The return result from icall will do the opposite,
     # converting a Tcl_Obj to an SV.
-    if (!$Tcl::STACK_TRACE) {
-	return $interp->icall(@args);
-    }
-    elsif (wantarray) {
+
+    # we need just this:
+    #    return $interp->icall(@args);
+    # a bit of complications only to allow stack trace, i.e. in case of errors
+    # user will get error pointing to his program and not in this module.
+
+    if (wantarray) {
 	my @res;
 	eval { @res = $interp->icall(@args); };
 	if ($@) {
@@ -586,53 +572,6 @@ sub call {
     }
 }
 
-# wcall is simple wrapper to 'call' but it tries to search $res in %anon_hash
-# This implementation is temporary
-sub wcall {
-    if (wantarray) {
-	return call(@_);
-    } else {
-	my $res = call(@_);
-	if (exists $anon_refs{$res}) {
-	    return $anon_refs{$res};
-	}
-	return $res;
-    }
-}
-
-sub return_ref {
-    my $interp = shift;
-    my $rname = shift;
-    return $anon_refs{$rname};
-}
-sub delete_ref {
-    my $interp = shift;
-    my $rname = shift;
-    my $ref = delete $anon_refs{$rname};
-    if (ref($ref) eq 'CODE') {
-	$interp->DeleteCommand($rname);
-    }
-    else {
-	$interp->UnsetVar($rname); #TODO: will this delete variable in Tcl?
-	untie $$ref;
-    }
-    return $ref;
-}
-sub return_widget_refs {
-    my $interp = shift;
-    my $wpath = shift;
-    return keys %{$widget_refs{$wpath}};
-}
-sub delete_widget_refs {
-    my $interp = shift;
-    my $wpath = shift;
-    for (keys %{$widget_refs{$wpath}}) {
-	#print STDERR "del:$wpath($_)\n";
-	delete $widget_refs{$wpath}->{$_};
-	$interp->delete_ref($_);
-    }
-}
-
 # create_tcl_sub will create TCL sub that will invoke perl anonymous sub
 # If $events variable is specified then special processing will be
 # performed to provide needed '%' variables.
@@ -646,8 +585,9 @@ sub create_tcl_sub {
 	$tclname = "::perl::$sub";
     }
     unless (exists $anon_refs{$tclname}) {
-	$anon_refs{$tclname} = $sub;
+	#$anon_refs{$tclname} = $sub;
 	$interp->CreateCommand($tclname, $sub, undef, undef, 1);
+	bless $sub, 'Tcl::Code';
     }
     if ($events) {
 	# Add any %-substitutions to callback
@@ -660,6 +600,17 @@ sub Ev {
     return bless \@events, "Tcl::Ev";
 }
 
+
+package Tcl::Code;
+
+# only purpose is to track CODE REFs passed to 'call' method 
+# (often these are anon subs)
+# so to bless it to this package and then catch deleting it, so 
+# to do cleaning up
+
+sub DESTROY {
+    print "CODE::DESTROY[[@_]]\n";
+}
 
 package Tcl::List;
 
