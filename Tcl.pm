@@ -585,7 +585,7 @@ sub create_tcl_sub {
 	$tclname = "::perl::$sub";
     }
     unless (exists $anon_refs{$tclname}) {
-	#$anon_refs{$tclname} = $sub;
+	$anon_refs{$tclname} = $sub;
 	$interp->CreateCommand($tclname, $sub, undef, undef, 1);
 	bless $sub, 'Tcl::Code';
     }
