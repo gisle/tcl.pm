@@ -429,6 +429,8 @@ END {
 # subs and with 'tie' for other)
 
 my %anon_refs;
+my $current_t;
+my %_ints;
 
 # (TODO -- find out how to check for refcounting and proper releasing of
 # resources)
@@ -439,6 +441,8 @@ my %anon_refs;
 sub call {
     my $interp = shift;
     my @args = @_;
+
+    $current_t = join ' ', grep {defined} grep {!ref || ref=~/^Tcl::(?!Code)/} @args;
 
     # Process arguments looking for special cases
     for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
@@ -533,7 +537,7 @@ sub call {
 	    }
 	    elsif (ref($args[$argcnt+1]) eq 'CODE') {
 		$args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$events);
-            }
+	    }
 	    else {
 		warn "not CODE/ARRAY expected after description of event fields";
 	    }
@@ -572,6 +576,27 @@ sub call {
     }
 }
 
+=comment
+sub return_ref {
+    my $interp = shift;
+    my $rname = shift;
+    return $anon_refs{$rname};
+}
+sub delete_ref {
+    my $interp = shift;
+    my $rname = shift;
+    my $ref = delete $anon_refs{$rname};
+    if (ref($ref) eq 'CODE') {
+	$interp->DeleteCommand($rname);
+    }
+    else {
+	$interp->UnsetVar($rname); #TODO: will this delete variable in Tcl?
+	untie $$ref;
+    }
+    return $ref;
+}
+=cut
+
 # create_tcl_sub will create TCL sub that will invoke perl anonymous sub
 # If $events variable is specified then special processing will be
 # performed to provide needed '%' variables.
@@ -584,11 +609,20 @@ sub create_tcl_sub {
 	# stringify sub, becomes "CODE(0x######)" in ::perl namespace
 	$tclname = "::perl::$sub";
     }
-    unless (exists $anon_refs{$tclname}) {
-	$anon_refs{$tclname} = $sub;
-	$interp->CreateCommand($tclname, $sub, undef, undef, 1);
-	bless $sub, 'Tcl::Code';
-    }
+
+    #print STDERR "...=$current_t\n";
+    $interp->CreateCommand($tclname, $sub, undef, undef, 1);
+
+    # following line a bit more tricky than it seems to.
+    # becase the whole intent of this hash is to have refcount of
+    # (possibly) anonumous sub that is happen to be passed,
+    # and, if passed for the same widget but arguments are same - then
+    # previous instance will be overwriten, and sub will be destroyed due
+    # to reference count, and Tcl method will also be destroyed during
+    # Tcl::Code::DESTROY
+    $anon_refs{$current_t} = bless \$sub, 'Tcl::Code';
+    $_ints{$tclname} = $interp;
+
     if ($events) {
 	# Add any %-substitutions to callback
 	$tclname = "$tclname " . join(' ', @{$events});
@@ -609,7 +643,11 @@ package Tcl::Code;
 # to do cleaning up
 
 sub DESTROY {
-    print "CODE::DESTROY[[@_]]\n";
+    my $rsub = $_[0];
+    my $tclname = "::perl::$$rsub";
+    print STDERR "CODE::DESTROY[[@_]] $tclname\n";
+    # where could we get interpreter?
+    $_ints{$tclname}->DeleteCommand($tclname) if defined $tclname;
 }
 
 package Tcl::List;
