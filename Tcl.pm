@@ -576,27 +576,6 @@ sub call {
     }
 }
 
-=comment
-sub return_ref {
-    my $interp = shift;
-    my $rname = shift;
-    return $anon_refs{$rname};
-}
-sub delete_ref {
-    my $interp = shift;
-    my $rname = shift;
-    my $ref = delete $anon_refs{$rname};
-    if (ref($ref) eq 'CODE') {
-	$interp->DeleteCommand($rname);
-    }
-    else {
-	$interp->UnsetVar($rname); #TODO: will this delete variable in Tcl?
-	untie $$ref;
-    }
-    return $ref;
-}
-=cut
-
 # create_tcl_sub will create TCL sub that will invoke perl anonymous sub
 # If $events variable is specified then special processing will be
 # performed to provide needed '%' variables.
@@ -614,8 +593,8 @@ sub create_tcl_sub {
     $interp->CreateCommand($tclname, $sub, undef, undef, 1);
 
     # following line a bit more tricky than it seems to.
-    # becase the whole intent of this hash is to have refcount of
-    # (possibly) anonumous sub that is happen to be passed,
+    # because the whole intent of the %anon_refs hash is to have refcount
+    # of (possibly) anonumous sub that is happen to be passed,
     # and, if passed for the same widget but arguments are same - then
     # previous instance will be overwriten, and sub will be destroyed due
     # to reference count, and Tcl method will also be destroyed during
