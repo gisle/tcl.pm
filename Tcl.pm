@@ -576,7 +576,7 @@ sub call {
     }
 }
 
-# create_tcl_sub will create TCL sub that will invoke perl anonymous sub
+# create_tcl_sub will create TCL sub that will invoke perl CODE ref
 # If $events variable is specified then special processing will be
 # performed to provide needed '%' variables.
 # If $tclname is specified then procedure will have namely that name,
@@ -594,7 +594,7 @@ sub create_tcl_sub {
 
     # following line a bit more tricky than it seems to.
     # because the whole intent of the %anon_refs hash is to have refcount
-    # of (possibly) anonumous sub that is happen to be passed,
+    # of (possibly) anonymous sub that is happen to be passed,
     # and, if passed for the same widget but arguments are same - then
     # previous instance will be overwriten, and sub will be destroyed due
     # to reference count, and Tcl method will also be destroyed during
