@@ -429,8 +429,6 @@ END {
 # subs and with 'tie' for other)
 
 my %anon_refs;
-my $current_t;
-my %_ints;
 
 # (TODO -- find out how to check for refcounting and proper releasing of
 # resources)
@@ -441,8 +439,7 @@ my %_ints;
 sub call {
     my $interp = shift;
     my @args = @_;
-
-    $current_t = join ' ', grep {defined} grep {!ref || ref=~/^Tcl::(?!Code)/} @args;
+    my $current_r = join '-', caller; # refcounted name
 
     # Process arguments looking for special cases
     for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
@@ -452,7 +449,7 @@ sub call {
 	if ($ref eq 'CODE' || $ref eq 'Tcl::Code') {
 	    # We have been passed something like \&subroutine
 	    # Create a proc in Tcl that invokes this subroutine (no args)
-	    $args[$argcnt] = $interp->create_tcl_sub($arg);
+	    $args[$argcnt] = $interp->create_tcl_sub($arg, undef, undef, $current_r);
 	}
 	elsif ($ref eq 'SCALAR') {
 	    # We have been passed something like \$scalar
@@ -503,7 +500,7 @@ sub call {
 	    $args[$argcnt] =
 		$interp->create_tcl_sub(sub {
 		    $arg->[0]->(@_, @$arg[1..$#$arg]);
-		}, $events);
+		}, $events, undef, $current_r);
 	}
 	elsif ($ref eq 'ARRAY' && ref($arg->[0]) =~ /^Tcl::Tk::Widget\b/) {
 	    # We have been passed [$Tcl_Tk_widget, 'method name', ...]
@@ -521,7 +518,7 @@ sub call {
 	    $args[$argcnt] =
 		$interp->create_tcl_sub(sub {
 		    $wid->$method_name(@$arg[2..$#$arg]);
-		}, $events);
+		}, $events, undef, $current_r);
 	}
 	elsif (ref($arg) eq 'REF' and ref($$arg) eq 'SCALAR') {
 	    # this is a very special shortcut: if we see construct like \\"xy"
@@ -533,10 +530,10 @@ sub call {
 		$args[$argcnt] =
 		    $interp->create_tcl_sub(sub {
 			$arg->[0]->(@_, @$arg[1..$#$arg]);
-		    }, $events);
+		    }, $events, undef, $current_r);
 	    }
 	    elsif (ref($args[$argcnt+1]) eq 'CODE') {
-		$args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$events);
+		$args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$events, undef, $current_r);
 	    }
 	    else {
 		warn "not CODE/ARRAY expected after description of event fields";
@@ -583,13 +580,13 @@ sub call {
 # otherwise it will have machine-readable name.
 # Returns tcl script suitable for using in tcl events.
 sub create_tcl_sub {
-    my ($interp,$sub,$events,$tclname) = @_;
+    my ($interp,$sub,$events,$tclname, $rname) = @_;
     unless ($tclname) {
 	# stringify sub, becomes "CODE(0x######)" in ::perl namespace
 	$tclname = "::perl::$sub";
     }
 
-    #print STDERR "...=$current_t\n";
+    #print STDERR "...=$rname\n";
     $interp->CreateCommand($tclname, $sub, undef, undef, 1);
 
     # following line a bit more tricky than it seems to.
@@ -599,8 +596,7 @@ sub create_tcl_sub {
     # previous instance will be overwriten, and sub will be destroyed due
     # to reference count, and Tcl method will also be destroyed during
     # Tcl::Code::DESTROY
-    $anon_refs{$current_t} = bless \$sub, 'Tcl::Code';
-    $_ints{$tclname} = $interp;
+    $anon_refs{$rname} = bless [\$sub, $interp], 'Tcl::Code';
 
     if ($events) {
 	# Add any %-substitutions to callback
@@ -622,11 +618,11 @@ package Tcl::Code;
 # to do cleaning up
 
 sub DESTROY {
-    my $rsub = $_[0];
+    my $rsub = $_[0]->[0];
+    my $interp = $_[0]->[1];
     my $tclname = "::perl::$$rsub";
     print STDERR "CODE::DESTROY[[@_]] $tclname\n";
-    # where could we get interpreter?
-    $_ints{$tclname}->DeleteCommand($tclname) if defined $tclname;
+    $interp->DeleteCommand($tclname) if defined $tclname;
 }
 
 package Tcl::List;

@@ -4,7 +4,7 @@ Revision history for Perl extension Tcl.
 
 	- many cleanup: Tcl::call now much smaller and does not tracks
 	  widgets anymore; $Tcl::STACK_TRACE, %widget_refs, sub wcall, etc
-	- another attempt to dispose CODE REFs when they are no more needed.
+	- proper disposal of CODE REFs when they are no more needed on tcl side.
 
 1.02	2011-02-11
 
