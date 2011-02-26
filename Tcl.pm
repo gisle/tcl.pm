@@ -413,10 +413,6 @@ sub new {
     return $int;
 }
 
-eval {
-    require "Tclaux.pm";
-};
-
 END {
     Tcl::_Finalize();
 }
@@ -439,7 +435,7 @@ my %anon_refs;
 sub call {
     my $interp = shift;
     my @args = @_;
-    my $current_r = join '-', caller; # refcounted name
+    my $current_r = join ' ', grep {defined} grep {!ref || ref=~/^Tcl::(?!Code)/} @args;
 
     # Process arguments looking for special cases
     for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {

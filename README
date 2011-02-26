@@ -24,10 +24,8 @@ script.
    make test
    make install
 
-AUTHOR
+AUTHORS
     Malcolm Beattie	mbeattie@sable.ox.ac.uk
-
-MAINTAINERS
     Vadim Konovalov
     Jeff Hobbs
     Gisle Aas
