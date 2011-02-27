@@ -435,7 +435,8 @@ my %anon_refs;
 sub call {
     my $interp = shift;
     my @args = @_;
-    my $current_r = join ' ', grep {defined} grep {!ref || ref=~/^Tcl::(?!Code)/} @args;
+    my $current_r = join ' ', grep {defined} grep {!ref} @args;
+    my @codes;
 
     # Process arguments looking for special cases
     for (my $argcnt=0; $argcnt<=$#args; $argcnt++) {
@@ -446,6 +447,7 @@ sub call {
 	    # We have been passed something like \&subroutine
 	    # Create a proc in Tcl that invokes this subroutine (no args)
 	    $args[$argcnt] = $interp->create_tcl_sub($arg, undef, undef, $current_r);
+	    push @codes, $anon_refs{$current_r}; # push CODE also only to keep it from early disposal
 	}
 	elsif ($ref eq 'SCALAR') {
 	    # We have been passed something like \$scalar
@@ -497,26 +499,9 @@ sub call {
 		$interp->create_tcl_sub(sub {
 		    $arg->[0]->(@_, @$arg[1..$#$arg]);
 		}, $events, undef, $current_r);
+	    push @codes, $anon_refs{$current_r};
 	}
-	elsif ($ref eq 'ARRAY' && ref($arg->[0]) =~ /^Tcl::Tk::Widget\b/) {
-	    # We have been passed [$Tcl_Tk_widget, 'method name', ...]
-	    # Create a proc in Tcl that invokes said method with args
-	    my $events;
-	    # Look for Tcl::Ev objects as the first arg - these must be
-	    # passed through for Tcl to evaluate.  Used primarily for %-subs
-	    # This could check for any arg ref being Tcl::Ev obj, but it
-	    # currently doesn't.
-	    if ($#$arg >= 1 && ref($arg->[1]) eq 'Tcl::Ev') {
-		$events = splice(@$arg, 1, 1);
-	    }
-	    my $wid = $arg->[0];
-	    my $method_name = $arg->[1];
-	    $args[$argcnt] =
-		$interp->create_tcl_sub(sub {
-		    $wid->$method_name(@$arg[2..$#$arg]);
-		}, $events, undef, $current_r);
-	}
-	elsif (ref($arg) eq 'REF' and ref($$arg) eq 'SCALAR') {
+	elsif ($ref eq 'REF' and ref($$arg) eq 'SCALAR') {
 	    # this is a very special shortcut: if we see construct like \\"xy"
 	    # then place proper Tcl::Ev(...) for easier access
 	    my $events = [map {"%$_"} split '', $$$arg];
@@ -527,9 +512,11 @@ sub call {
 		    $interp->create_tcl_sub(sub {
 			$arg->[0]->(@_, @$arg[1..$#$arg]);
 		    }, $events, undef, $current_r);
+		push @codes, $anon_refs{$current_r};
 	    }
 	    elsif (ref($args[$argcnt+1]) eq 'CODE') {
 		$args[$argcnt] = $interp->create_tcl_sub($args[$argcnt+1],$events, undef, $current_r);
+		push @codes, $anon_refs{$current_r};
 	    }
 	    else {
 		warn "not CODE/ARRAY expected after description of event fields";
@@ -537,6 +524,26 @@ sub call {
 	    splice @args, $argcnt+1, 1;
 	}
     }
+
+    if ($#codes>-1 and $args[0] eq 'after') {
+	if ($args[1] =~ /^\d+$/) {
+	    my $id = $interp->icall(@args);
+	    #print STDERR "rebind for $interp;$id\n";
+	    # in 'after' methods, disposal of CODE REFs based on 'after' id
+	    # i.e based on return value of tcl call
+	    $anon_refs{"$interp;$id"} = \@codes;
+	    delete $anon_refs{$current_r};
+	    # plan deleting that entry, hence Tcl command during Tcl::Code::DESTROY
+	    # TODO - this +1000 is wrong... should
+	    $interp->invoke('after',$args[1]+1000, "perl::Eval {Tcl::_code_dispose('$interp;$id')}");
+	    return $id;
+	} elsif ($args[1] eq 'idle') {
+	    # no planned CODE REF disposal, just do as is
+	    return $interp->icall(@args);
+	}
+	# if we're here - user does something wrong, but there is nothing we worry about
+    }
+
     # Done with special var processing.  The only processing that icall
     # will do with the args is efficient conversion of SV to Tcl_Obj.
     # A SvIV will become a Tcl_IntObj, ARRAY refs will become Tcl_ListObjs,
@@ -547,6 +554,7 @@ sub call {
     #    return $interp->icall(@args);
     # a bit of complications only to allow stack trace, i.e. in case of errors
     # user will get error pointing to his program and not in this module.
+    # and also 'after' tcl method makes bit harder
 
     if (wantarray) {
 	my @res;
@@ -600,6 +608,17 @@ sub create_tcl_sub {
     }
     return $tclname;
 }
+
+sub _code_dispose {
+    my $k = shift;
+    #print STDERR "_code_dispose $k\n";
+    #my $int = $anon_refs{$k}->[0]->[1];
+    #my @r = $int->Eval("after info $id"); # why do not work?
+    #print STDERR "r=@r\n";
+    delete $anon_refs{$k};
+}
+
+
 sub Ev {
     my @events = @_;
     return bless \@events, "Tcl::Ev";
@@ -617,7 +636,7 @@ sub DESTROY {
     my $rsub = $_[0]->[0];
     my $interp = $_[0]->[1];
     my $tclname = "::perl::$$rsub";
-    print STDERR "CODE::DESTROY[[@_]] $tclname\n";
+    #print STDERR "CODE::DESTROY[[@_]] $tclname\n";
     $interp->DeleteCommand($tclname) if defined $tclname;
 }
 

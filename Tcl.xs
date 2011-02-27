@@ -988,6 +988,8 @@ Tcl__new(class = "Tcl")
 	 */
 	if (initialized) {
 	    Tcl interp = Tcl_CreateInterp();
+	    Tcl_CreateObjCommand(interp, "::perl::Eval", Tcl_EvalInPerl,
+		    (ClientData) NULL, NULL);
 	    /*
 	     * Add to the global hash of live interps.
 	     */
@@ -1395,8 +1397,6 @@ Tcl_Init(interp)
 	if (tclKit_AppInit(interp) != TCL_OK) {
 	    croak(Tcl_GetStringResult(interp));
 	}
-	Tcl_CreateObjCommand(interp, "::perl::Eval", Tcl_EvalInPerl,
-		(ClientData) NULL, NULL);
 
 #ifdef HAVE_DDEINIT
 
