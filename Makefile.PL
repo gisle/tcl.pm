@@ -1,11 +1,10 @@
-#!perl -w
-
 # before running this script make sure you have 'tclsh' in your path, 
 # and this 'tcl' distribution is required one.
 # FreeBSD users may want to modify name of tcl interpreter (this is
 # $tclsh variable below) as long as 'tclsh' does not work in their case
 
 use strict;
+use warnings;
 use Getopt::Long qw(GetOptions);
 use ExtUtils::MakeMaker;
 use Config;

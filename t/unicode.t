@@ -1,5 +1,3 @@
-#!perl -w
-
 # Test the transfer of null and various unicode data through assorted APIs.
 # The \x{2030} is the permille sign.
 #
@@ -7,6 +5,8 @@
 # on what kind of locale it runs under.
 
 use strict;
+use warnings;
+
 use Test qw(plan ok);
 
 plan tests => 6;
