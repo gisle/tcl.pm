@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+
 use Tcl;
 
 $| = 1;
@@ -12,7 +15,7 @@ sub foo {
     $interp->Eval('puts $four', Tcl::EVAL_GLOBAL);
 }
 
-$i = new Tcl;
+my $i = new Tcl;
 
 $i->SetVar("foo", "ok 1");
 $i->Eval('puts $foo');
@@ -33,8 +36,8 @@ baz
 EOT
 
 $i->Eval('set a(OK) ok; set a(five) 5');
-$ok = $i->GetVar2("a", "OK");
-$five = $i->GetVar2("a", "five");
+my $ok = $i->GetVar2("a", "OK");
+my $five = $i->GetVar2("a", "five");
 print "$ok $five\n";
 
 print defined($i->GetVar("nonesuch")) ? "not ok 6\n" : "ok 6\n";
@@ -47,7 +50,7 @@ if ($]>=5.006 && $i->GetVar("tcl_version")>=8.1) {
     }
     print "ok 7 # Unicode persistence during [SG]etVar\n";
     my $r;
-    tie $r, Tcl::Var, $i, "perl_r";
+    tie $r, 'Tcl::Var', $i, "perl_r";
     $r = "\x{abcd}\x{1234}";
     if ($r ne "\x{abcd}\x{1234}") {
 	print "not ";

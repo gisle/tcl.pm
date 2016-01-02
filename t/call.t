@@ -3,6 +3,9 @@
 # Tests for the 'call' and 'icall' functions.
 #
 
+use strict;
+use warnings;
+
 use Tcl;
 
 $| = 1;

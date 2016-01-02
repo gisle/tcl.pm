@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+
 use Tcl;
 
 $| = 1;
@@ -22,7 +25,7 @@ sub bargone {
     print "ok $_[0]\n";
 }
 
-$i = new Tcl;
+my $i = Tcl->new;
 
 $i->CreateCommand("foo", \&foo, {OK => "ok"}, \&foogone);
 $i->CreateCommand("bar", \&bar, 4, \&bargone);
