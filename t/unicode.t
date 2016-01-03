@@ -13,7 +13,7 @@ plan tests => 6;
 
 use Tcl;
 
-my $int = new Tcl;
+my $int = Tcl->new;
 
 my $str = "This is a string\n";
 $str .= "This is a string containing NUL (\0) and some other controls (\a\r)\n";

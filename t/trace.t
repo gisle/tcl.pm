@@ -4,7 +4,7 @@ $| = 1;
 
 print "1..2\n";
 
-$i = new Tcl;
+$i = Tcl->new;
 
 tie $perlscalar, Tcl::Var, $i, "tclscalar";
 tie %perlhash, Tcl::Var, $i, "tclhash";

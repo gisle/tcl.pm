@@ -22,7 +22,7 @@ sub bargone {
     print "ok $_[0]\n";
 }
 
-$i = new Tcl;
+$i = Tcl->new;
 
 $i->CreateCommand("foo", \&foo, {OK => "ok"}, \&foogone);
 $i->CreateCommand("bar", \&bar, 4, \&bargone);
