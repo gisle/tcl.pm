@@ -4,7 +4,7 @@ use Test;
 BEGIN {plan tests=>4}
 use Tcl;
 
-my $int = new Tcl;
+my $int = Tcl->new;
 
 $tcl::foo = $tcl::foo = 'qwerty';
 my $x = "some perl scalar var";

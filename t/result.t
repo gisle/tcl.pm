@@ -10,7 +10,7 @@ sub foo {
     return undef;
 }
 
-$i = new Tcl;
+$i = Tcl->new;
 
 
 $i->Eval('expr 10 + 30');

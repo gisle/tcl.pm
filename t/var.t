@@ -12,7 +12,7 @@ sub foo {
     $interp->Eval('puts $four', Tcl::EVAL_GLOBAL);
 }
 
-$i = new Tcl;
+$i = Tcl->new;
 
 $i->SetVar("foo", "ok 1");
 $i->Eval('puts $foo');

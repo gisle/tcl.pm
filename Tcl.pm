@@ -796,7 +796,7 @@ An example:
   use strict;
   use Tcl;
   
-  my $int = new Tcl;
+  my $int = Tcl->new;
   
   $tcl::foo = 'qwerty';
   $int->export_to_tcl(subs_from=>'tcl',vars_from=>'tcl');
