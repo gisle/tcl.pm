@@ -74,7 +74,7 @@ returned (the object argument omitted in each case).
 
 =item $interp->Init ()
 
-Invoke I<Tcl_Init> on the interpeter.
+Invoke I<Tcl_Init> on the interpreter.
 
 =item $interp->Eval (STRING, FLAGS)
 
@@ -211,7 +211,7 @@ deleteProc field presumably obtained in a similar way.
 (either a sub name, a sub reference or an anonymous sub). In this case
 CLIENTDATA can be any perl scalar (e.g. a ref to some other data) and
 DELETEPROC must be a perl sub too. When CMDNAME is invoked in the Tcl
-interpeter, the arguments passed to the Perl sub CMDPROC are
+interpreter, the arguments passed to the Perl sub CMDPROC are
 
     (CLIENTDATA, INTERP, LIST)
 
@@ -221,7 +221,7 @@ If the 1-bit of FLAGS is set then the 3 first arguments on the call
 to CMDPROC are suppressed.
 As usual in Tcl, the first element of the list is CMDNAME itself.
 When CMDNAME is deleted from the interpreter (either explicitly with
-I<DeleteCommand> or because the destructor for the interpeter object
+I<DeleteCommand> or because the destructor for the interpreter object
 is called), it is passed the single argument CLIENTDATA.
 
 =item $interp->DeleteCommand (CMDNAME)
