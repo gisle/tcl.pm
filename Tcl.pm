@@ -1,5 +1,8 @@
 package Tcl;
 
+use strict;
+use warnings;
+
 $Tcl::VERSION = '1.03';
 
 =head1 NAME

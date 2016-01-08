@@ -1,5 +1,8 @@
 # see how CODE REFs are created and then freed
 
+use strict;
+use warnings;
+
 use Tcl;
 
 $| = 1;
@@ -11,8 +14,9 @@ my $int = Tcl->new;
 $int->call('after', 1000, sub {"foo, bar, fluffy\n";});
 
 my $q = 0;
+my $r;
 for (1 .. 1000) {
-    my $r = 'aaa';
+    $r = 'aaa';
     $int->call('after', 1000, sub {"*";});
     $int->call('after', 1000, sub {$r++;"$r#";});
 

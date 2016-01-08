@@ -1,13 +1,16 @@
+use strict;
+use warnings;
+
 use Tcl;
 
 $| = 1;
 
 print "1..2\n";
 
-$i = new Tcl;
+my $i = new Tcl;
 
-tie $perlscalar, Tcl::Var, $i, "tclscalar";
-tie %perlhash, Tcl::Var, $i, "tclhash";
+tie my $perlscalar, 'Tcl::Var', $i, "tclscalar";
+tie my %perlhash, 'Tcl::Var', $i, "tclhash";
 
 $i->Eval('set tclscalar ok; set tclhash(key) 1');
 printf "%s %s\n", $perlscalar, $perlhash{"key"};

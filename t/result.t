@@ -1,8 +1,13 @@
+use strict;
+use warnings;
+
 use Tcl;
 
 $| = 1;
 
 print "1..5\n";
+
+my $i;
 
 sub foo {
     my $interp = $_[1];
@@ -26,7 +31,7 @@ $i->CreateCommand("foo", \&foo);
 $i->Eval('if {[catch foo res]} {puts $res} else {puts "ok 2"}');
 
 $i->ResetResult();
-@qlist = qw(a{b  g\h  j{{k}  l}m{   \}n);
+my @qlist = qw(a{b  g\h  j{{k}  l}m{   \}n);
 foreach (@qlist) {
     $i->AppendElement($_);
 }
@@ -37,7 +42,7 @@ if ($i->result eq 'a\{b {g\h} j\{\{k\} l\}m\{ {\}n}') {
     print "not ok 3\n";
 }
 
-@qlistout = $i->SplitList($i->result);
+my @qlistout = $i->SplitList($i->result);
 if ("@qlistout" eq "@qlist") {
     print "ok 4\n";
 } else {

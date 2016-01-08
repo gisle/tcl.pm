@@ -1,5 +1,8 @@
 # tests convenience sub export_to_tcl
 
+use strict;
+use warnings;
+
 use Test;
 BEGIN {plan tests=>4}
 use Tcl;
