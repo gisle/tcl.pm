@@ -47,9 +47,6 @@ if ($^O eq "aix") {
     $arch = "$^O-x86_64" if ($Config{archname} =~ /x86_64/);
 } elsif ($^O eq "cygwin") {
     $tclconfig = '/usr/lib/tclConfig.sh';
-} elsif ($^O eq "solaris") {
-    $arch = "$^O-x86" if ($Config{archname} =~ /[ix]86/);
-    $arch = "$^O-sparc" if ($Config{archname} =~ /sun4/);
 }
 
 sub _die ($) {
