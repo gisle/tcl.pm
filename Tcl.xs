@@ -1003,6 +1003,31 @@ Tcl__new(class = "Tcl")
 	RETVAL
 
 SV *
+Tcl_CreateSlave(master,name,safe)
+	Tcl master
+	char *  name
+	int safe
+    CODE:
+	RETVAL = newSV(0);
+	/*
+	 * We might consider Tcl_Preserve/Tcl_Release of the interp.
+	 */
+	if (initialized) {
+	    Tcl interp = Tcl_CreateSlave(master,name,safe);
+	    /*
+	     * Add to the global hash of live interps.
+	     */
+	    if (hvInterps) {
+		(void) hv_store(hvInterps, (const char *) &interp,
+			sizeof(Tcl), &PL_sv_undef, 0);
+	    }
+		/* Create lets us set a class, should we do this too? */
+	    sv_setref_pv(RETVAL, "Tcl", (void*)interp);
+	}
+    OUTPUT:
+	RETVAL
+
+SV *
 Tcl_result(interp)
 	Tcl	interp
     CODE:

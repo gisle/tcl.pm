@@ -76,6 +76,15 @@ returned (the object argument omitted in each case).
 
 Invoke I<Tcl_Init> on the interpreter.
 
+=item $interp->CreateSlave (NAME, SAFE)
+
+Invoke I<Tcl_CreateSlave> on the interpeter.  Name is arbitrary.
+The safe variable, if true, creates a safe sandbox interpreter.
+ See: http://www.tcl.tk/software/plugin/safetcl.html
+      http://www.tcl.tk/man/tcl8.4/TclCmd/safe.htm
+
+This command returns a new interpreter.
+
 =item $interp->Eval (STRING, FLAGS)
 
 Evaluate script STRING in the interpreter. If the script returns
