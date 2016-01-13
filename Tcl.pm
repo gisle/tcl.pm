@@ -130,7 +130,7 @@ created using CreateCommand subroutine (see below).
 2.  All references to scalars will be substituted with names of Tcl variables
 transformed appropriately.
 
-These first two items allows to write and expect it to work properly such
+These first two items allows one to write and expect it to work properly such
 code as:
 
   my $r = 'aaaa';
