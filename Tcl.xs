@@ -1404,8 +1404,8 @@ Tcl__Finalize(interp=NULL)
 	    g_Interp = NULL;
 	}
 #endif
-	Tcl_Finalize();
 	initialized = 0;
+	Tcl_Finalize();
 #ifdef USE_TCL_STUBS
 	if (tclHandle) {
 	    dlclose(tclHandle);
@@ -1581,7 +1581,7 @@ Tcl_DeleteCommand(interp, cmdName)
 	Tcl	interp
 	char *	cmdName
     CODE:
-	RETVAL = boolSV(Tcl_DeleteCommand(interp, cmdName) == TCL_OK);
+	RETVAL = boolSV(initialized ? Tcl_DeleteCommand(interp, cmdName) == TCL_OK:TRUE);
     OUTPUT:
 	RETVAL
 
