@@ -4,7 +4,7 @@ use Tcl;
 
 $| = 1;
 
-print "1..1\n";
+print "1..2\n";
 
 my $int = Tcl->new;
 
@@ -22,13 +22,30 @@ for (1 .. 1000) {
     });
 }
 
-$int->call('after', 3000, 'set var fafafa');
+$int->icall('after', 3000, 'set var fafafa');
 $int->icall('vwait', 'var'); # will wait for 3 seconds
 
 # we have a number of commands created in Tcl, '::perl' package,
 # but they must have been disposed.
-my @perl = $int->icall('info', 'commands', '::perl::*');
-print STDERR "[[@perl; $r]]\n";
+my @p1 = $int->icall('info', 'commands', '::perl::*');
+print STDERR "[[@p1; $r]]\n";
 
-print +($#perl>10?"not ":""), "ok 1\n";
+print +($#p1>10?"not ":""), "ok 1\n";
+
+for (1 .. 1000) {
+    my $r = 'aaa';
+    $int->call('after', 1000, sub {"*";});
+    $int->call('after', 1000, sub {$r++;"$r#";});
+
+    $int->call('if', 1000, sub {
+	$r++;
+	$q++;
+    });
+}
+$int->icall('after', 300, 'set var fafafa');
+$int->icall('vwait', 'var'); # will wait for 0.3 seconds; will still have procs
+my @p2 = $int->icall('info', 'commands', '::perl::*');
+print +($#p2<10?"not ":""), "ok 2\n";
+
+# now we finish and procs destroyed on cleanup
 
