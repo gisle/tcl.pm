@@ -1,12 +1,16 @@
 Revision history for Perl extension Tcl.
 
-1.03	2011-02-xx
+1.03	2016-01-xx
 
 	- many cleanup: Tcl::call now much smaller and does not tracks
 	  widgets anymore; $Tcl::STACK_TRACE, %widget_refs, sub wcall, etc
 	- proper disposal of CODE REFs when they are no more needed on tcl side.
 	- new test t/disposal-subs.t
 	- Tcl::call processes 'after' differently
+        - use direct object syntax for calls to 'new'
+        - fixed minor typos in POD
+        - removed superfluous Solaris check in Makefile.PL
+        - add Travis-CI configuration
 
 1.02	2011-02-11
 

@@ -925,6 +925,7 @@ sub export_tcl_namespace {
  Vadim Konovalov, vkon@cpan.org, 19 May 2003.
  Jeff Hobbs, jeff (a) activestate . com, 22 Mar 2004.
  Gisle Aas, gisle (a) activestate . com, 14 Apr 2004.
+ Paul Cochrane, paul@liekut.de
 
 =head1 COPYRIGHT
 
@@ -936,4 +937,3 @@ See http://www.perl.com/perl/misc/Artistic.html
 =cut
 
 1;
-
