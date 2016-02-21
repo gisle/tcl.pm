@@ -18,7 +18,6 @@ my $libpath;
 my $incpath;
 my $defs = "";
 my $buildtype = "";
-my $wince;
 my @extraargs;
 
 my $arch;
@@ -76,38 +75,12 @@ GetOptions("tclsh=s", \$tclsh,         # Use this tclsh executable as a
 Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>]
                         [--buildspec] [--nousestubs] [<makemaker opts>...]
 
-or for WinCE cross-compilation:
-
-       perl -MCross=[your-cross-name] Makefile.PL PERL_CORE=1
-             PERL_SRC=[your-perl-distribution-for-wince-crosscompiling]
-
 or for expert compilation:
 
        perl --library=-l/path/to/tcl(stub).a --include=-I/path/to/tcl/include
             --define="-DLIB_RUNTIME_DIR=... -DTCL_LIB_FILE=..."
 
 EOT
-
-if (defined $Cross::platform) {
-    # All appropriate environment variables shoult be set properly, such
-    # as OSVERSION, PLATFORM, WCEROOT, SDKROOT. This is usually done with
-    # appropriate 'bat' file. such as WCEMIPS.BAT
-    #
-    #
-    # edit following two paths to reflect your situation
-    # when editing please note that there should be tcl84.lib
-    # libraries at "$tcldir\\wince\\$Cross::platform-release"
-    #
-    my $tcldir = 'D:\personal\pocketPC\tcltk\84a2\tcl8.4a2';
-
-    WriteMakefile(
-        NAME => "Tcl",
-        VERSION_FROM => 'Tcl.pm',
-        LIBS => ["-l$tcldir\\wince\\$Cross::platform-release\\tcl84.lib"],
-        INC => "-I$tcldir\\generic",
-    );
-    exit;
-}
 
 if ($usestubs) {
     $defs .= " -DUSE_TCL_STUBS";
