@@ -24,27 +24,6 @@ script.
    make test
    make install
 
-AUTHORS
-    Malcolm Beattie	mbeattie@sable.ox.ac.uk
-    Vadim Konovalov
-    Jeff Hobbs
-    Gisle Aas
-    Paul Cochrane
+See License, Authors sections in Tcl.pm, or with 'perldoc Tcl' - once it
+is installed - to have acknowledged on this type of information, if needed.
 
-LICENSE
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of either:
-
-        a) the GNU General Public License as published by the Free
-        Software Foundation; either version 1, or (at your option) any
-        later version, or
-
-        b) the "Artistic License" which comes with every Perl distribution.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See either
-    the GNU General Public License or the Artistic License for more details.
-
-	      Copyright (c) 1994-1997, Malcolm Beattie
-			 All rights reserved.
