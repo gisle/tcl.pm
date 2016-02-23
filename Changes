@@ -1,6 +1,10 @@
 Revision history for Perl extension Tcl.
 
-1.03	2016-01-xx
+1.04	2016-03-xx
+
+	- TBD
+
+1.03	2016-02-20
 
 	- many cleanup: Tcl::call now much smaller and does not tracks
 	  widgets anymore; $Tcl::STACK_TRACE, %widget_refs, sub wcall, etc
