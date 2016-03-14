@@ -388,16 +388,22 @@ unless (defined $DL_PATH) {
     $DL_PATH = $ENV{PERL_TCL_DL_PATH} || $ENV{PERL_TCL_DLL} || "";
 }
 
-unless ($DL_PATH) {
-    require Config;
-    for my $inc (@INC) {
-        my $tkkit = "$inc/auto/Tcl/tkkit.$Config::Config{so}";
-        if (-f $tkkit) {
-            $DL_PATH = $tkkit;
-            last;
+=ignore
+sub Tcl::seek_tkkit {
+    # print STDERR "wohaaa!\n";
+    unless ($DL_PATH) {
+        require Config;
+        for my $inc (@INC) {
+            my $tkkit = "$inc/auto/Tcl/tkkit.$Config::Config{so}";
+            if (-f $tkkit) {
+                $DL_PATH = $tkkit;
+                last;
+            }
         }
     }
 }
+=cut
+seek_tkkit() if defined &seek_tkkit;
 
 
 my $path;
