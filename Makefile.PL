@@ -269,3 +269,4 @@ BEGIN {
         ExtUtils::MakeMaker::WriteMakefile(%arg);
     };
 }
+

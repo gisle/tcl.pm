@@ -3,6 +3,7 @@ Revision history for Perl extension Tcl.
 1.04	2016-03-xx
 
 	- not seeking tkkit.dll
+	- some NpLoadLibrary adj
 
 1.03	2016-02-20
 

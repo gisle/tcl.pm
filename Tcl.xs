@@ -252,17 +252,13 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 #endif
 
     if (!handle) {
-	char *pos;
-
 	if (strlen(TCL_LIB_FILE) < 3) {
-	    warn("Invalid base Tcl library filename provided: '%s'",
-		    TCL_LIB_FILE);
+	    warn("Invalid base Tcl library filename provided: '%s'", TCL_LIB_FILE);
 	    return TCL_ERROR;
 	}
 
 	/* Try based on full path. */
-	snprintf(libname, MAX_PATH-1, "%s/%s",
-		defaultLibraryDir, TCL_LIB_FILE);
+	snprintf(libname, MAX_PATH-1, "%s/%s", defaultLibraryDir, TCL_LIB_FILE);
 	handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
 	if (!handle) {
 	    /* Try based on anywhere in the path. */
@@ -271,13 +267,17 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	}
 	if (!handle) {
 	    /* Try different versions anywhere in the path. */
-	    pos = strstr(libname, "tcl8")+4;
+	    char *pos = strstr(libname, "tcl8")+4;
 	    if (*pos == '.') {
 		pos++;
 	    }
-	    *pos = '9'; /* count down from '8' to '4'*/
-	    while (!handle && (--*pos > '3')) {
+	    *pos = '9'; /* count down from '8' to '4', and then to '0', it is also ok*/
+	    while (!handle && (--*pos >= '0')) {
 		handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+	    }
+	    if (!handle) {
+		warn("failed all posible tcl vers 8.x from 9 down to 0");
+		return TCL_ERROR;
 	    }
 	}
     }
@@ -354,7 +354,7 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
  *	Create the main interpreter.
  *
  * Results:
- *	The pointer to the main interpreter.
+ *	TCL_OK or TCL_ERROR - whether succeeded or not
  *
  * Side effects:
  *	Will panic if called twice. (Must call DestroyMainInterp in between)
