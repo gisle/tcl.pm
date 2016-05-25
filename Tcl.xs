@@ -213,7 +213,7 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 #if !defined(WIN32) && !defined(__hpux)
 	    char *error = dlerror();
 	    if (error != NULL) {
-		warn(error);
+		warn("%s",error);
 	    }
 #endif
 	    warn("NpLoadLibrary: could not find Tcl library at '%s'", dl_path);
@@ -399,7 +399,7 @@ NpInitialize(pTHX_ SV *X)
 #if !defined(WIN32) && !defined(__hpux)
 	    char *error = dlerror();
 	    if (error != NULL) {
-		warn(error);
+		warn("%s",error);
 	    }
 #endif
 	    return TCL_ERROR;
