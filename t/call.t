@@ -45,6 +45,9 @@ print "ok 10\n";
 my $v = 1;
 $i->call("after", 250, sub { print "ok 11\n"; $v++; });
 $i->call("vwait", \$v);
+
+$i->call("after", 3000, 'set var fafafa');
+$i->call("vwait", "var");
 print "not " unless $v == 2;
 print "ok 12\n";
 
