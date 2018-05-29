@@ -1,6 +1,6 @@
 package Tcl;
 
-$Tcl::VERSION = '1.04';
+$Tcl::VERSION = '1.05';
 
 =head1 NAME
 
@@ -576,7 +576,7 @@ sub call {
 	eval { @res = $interp->icall(@args); };
 	if ($@) {
 	    require Carp;
-	    Carp::confess ("Tcl error '$@' while invoking array result call:\n" .
+	    Carp::croak ("Tcl error '$@' while invoking array result call:\n" .
 		"\t\"@args\"");
 	}
 	return @res;
@@ -585,7 +585,7 @@ sub call {
 	eval { $res = $interp->icall(@args); };
 	if ($@) {
 	    require Carp;
-	    Carp::confess ("Tcl error '$@' while invoking scalar result call:\n" .
+	    Carp::croak ("Tcl error '$@' while invoking scalar result call:\n" .
 		"\t\"@args\"");
 	}
 	return $res;
@@ -652,7 +652,7 @@ sub DESTROY {
     my $interp = $_[0]->[1];
     my $tclname = "::perl::$$rsub";
     #print STDERR "CODE::DESTROY[[@_]] $tclname\n";
-    $interp->DeleteCommand($tclname) if defined $tclname;
+    $interp->DeleteCommand($tclname) if defined $interp;
 }
 
 package Tcl::List;
