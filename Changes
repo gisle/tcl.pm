@@ -2,7 +2,7 @@ Revision history for Perl extension Tcl.
 
 1.06	2018-06-xx
 
-	- sjaluo fix to Tcl.xs; rt.cpan.org ticket 21181
+	- sjaluo fix to Tcl.xs/.pm; rt.cpan.org tickets 21181, 125408
 
 1.05	2016-06-28
 

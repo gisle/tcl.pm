@@ -575,8 +575,9 @@ sub call {
 	my @res;
 	eval { @res = $interp->icall(@args); };
 	if ($@) {
+	    my $errmsg = $@;     # 'require Carp' might destroy $@;
 	    require Carp;
-	    Carp::croak ("Tcl error '$@' while invoking array result call:\n" .
+	    Carp::croak ("Tcl error '$errmsg' while invoking array result call:\n" .
 		"\t\"@args\"");
 	}
 	return @res;
@@ -584,8 +585,9 @@ sub call {
 	my $res;
 	eval { $res = $interp->icall(@args); };
 	if ($@) {
+	    my $errmsg = $@;     # 'require Carp' might destroy $@;
 	    require Carp;
-	    Carp::croak ("Tcl error '$@' while invoking scalar result call:\n" .
+	    Carp::croak ("Tcl error '$errmsg' while invoking scalar result call:\n" .
 		"\t\"@args\"");
 	}
 	return $res;
@@ -719,8 +721,9 @@ sub CLEAR {
 sub DELETE {
     my $obj = shift;
     unless (@{$obj} == 2 || @{$obj} == 3) {
+	my @args = @_;
 	require Carp;
-	Carp::croak("STORE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+	Carp::croak("STORE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@args)");
     }
     my ($interp, $varname, $flags) = @{$obj};
     my ($str1) = @_;
