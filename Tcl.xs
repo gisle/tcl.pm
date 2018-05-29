@@ -370,8 +370,10 @@ NpInitialize(pTHX_ SV *X)
     /*
      * We want the Tcl_InitStubs func static to ourselves - before Tcl
      * is loaded dyanmically and possibly changes it.
+     * Variable initstubs have to be declared as volatile to prevent
+     * compiler optimizing it out.
      */
-    static CONST char *(*initstubs)(Tcl_Interp *, CONST char *, int)
+    static CONST char *(*volatile initstubs)(Tcl_Interp *, CONST char *, int)
 	= Tcl_InitStubs;
     char dllFilename[MAX_PATH];
     dllFilename[0] = '\0';
