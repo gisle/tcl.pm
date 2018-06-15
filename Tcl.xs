@@ -915,6 +915,12 @@ Tcl_PerlCallDeleteProc(ClientData clientData)
     }
 
     SvREFCNT_dec(av);
+/*   it got double tapped when it was made
+     ie AV *av = (AV *) SvREFCNT_inc((SV *) newAV());
+     so undouble tap it now
+*/
+    SvREFCNT_dec(av);
+
 }
 
 void
