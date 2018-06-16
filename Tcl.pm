@@ -431,7 +431,7 @@ Be aware: Tkx::MainLoop runs by issueing a lot of "winfo exists ." calls, a LOT.
 But this is a nice way to tell what your programs are doing to Tcl.
 
 
-=item $Tcl::$TRACE_CREATECOMMAND
+=item $Tcl::TRACE_CREATECOMMAND
 
 Display Tcl subroutine creation by call/create_tcl_sub
 
@@ -527,8 +527,8 @@ to use these libraries in a link stage.
 use strict;
 
 our $TRACE_SHOWCODE;       # display generated code in call();
-our $TRACE_CREATECOMMAND;  # display sub creates ;
-our $TRACE_DELETECOMMAND;  # display subdeletes;
+our $TRACE_CREATECOMMAND;  # display sub creates;
+our $TRACE_DELETECOMMAND;  # display sub deletes;
 
 $TRACE_SHOWCODE      = 0 unless defined $TRACE_SHOWCODE;
 $TRACE_DELETECOMMAND = 0 unless defined $TRACE_DELETECOMMAND;
