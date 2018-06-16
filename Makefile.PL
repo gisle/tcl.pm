@@ -24,9 +24,7 @@ my $arch;
 my $stub = "tclstub8.4";
 
 # These need updating as more platforms are added to tcl-core/ area
-if ($^O eq "aix") {
-    $arch = "aix";
-} elsif ($^O eq "MSWin32") {
+if ($^O eq "MSWin32") {
     $stub = "tclstub84";
     $arch = "win32-x86" if ($Config{archname} =~ /-x86-/);
     $arch = "win32-x64" if ($Config{archname} =~ /-x64-/);
