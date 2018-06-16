@@ -1,8 +1,11 @@
+MYMETA.YML
 Makefile
 Tcl.bs
 Tcl.c
 blib
 pm_to_blib
+*~
+*.orig
 *.o
 *.old
 *.tar.gz
