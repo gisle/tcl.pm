@@ -1064,7 +1064,7 @@ Tcl_Eval(interp, script, flags = 0)
 	/* sv_mortalcopy here prevents stringifying script - necessary ?? */
 	cscript = SvPV(sv_mortalcopy(script), length);
 	if (Tcl_EvalEx(interp, cscript, length, flags) != TCL_OK) {
-	    croak(Tcl_GetStringResult(interp));
+	    croak("%s", Tcl_GetStringResult(interp));
 	}
 	prepare_Tcl_result(aTHX_ interp, "Tcl::Eval");
 	SPAGAIN;
@@ -1127,7 +1127,7 @@ Tcl_EvalFile(interp, filename)
 	PUTBACK;
 	Tcl_ResetResult(interp);
 	if (Tcl_EvalFile(interp, filename) != TCL_OK) {
-	    croak(Tcl_GetStringResult(interp));
+	    croak("%s", Tcl_GetStringResult(interp));
 	}
 	prepare_Tcl_result(aTHX_ interp, "Tcl::EvalFile");
 	SPAGAIN;
@@ -1152,7 +1152,7 @@ Tcl_EvalFileHandle(interp, handle)
 	    {
 		Tcl_ResetResult(interp);
 		if (Tcl_Eval(interp, s) != TCL_OK)
-		    croak(Tcl_GetStringResult(interp));
+		    croak("%s", Tcl_GetStringResult(interp));
 		append = 0;
 	    }
 	}
@@ -1286,7 +1286,7 @@ Tcl_invoke(interp, sv, ...)
 	    }
 
 	    if (result != TCL_OK) {
-		croak(Tcl_GetStringResult(interp));
+		croak("%s", Tcl_GetStringResult(interp));
 	    }
 	    prepare_Tcl_result(aTHX_ interp, "Tcl::invoke");
 
@@ -1353,7 +1353,7 @@ Tcl_icall(interp, sv, ...)
 	    }
 
 	    if (result != TCL_OK) {
-		croak(Tcl_GetStringResult(interp));
+		croak("%s", Tcl_GetStringResult(interp));
 	    }
 	    prepare_Tcl_result(aTHX_ interp, "Tcl::icall");
 
@@ -1428,7 +1428,7 @@ Tcl_Init(interp)
     CODE:
 	if (!initialized) { return; }
 	if (tclKit_AppInit(interp) != TCL_OK) {
-	    croak(Tcl_GetStringResult(interp));
+	    croak("%s", Tcl_GetStringResult(interp));
 	}
 
 #ifdef HAVE_DDEINIT
