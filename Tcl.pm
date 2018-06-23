@@ -1233,7 +1233,7 @@ sub export_tcl_namespace {
  Gisle Aas, gisle (a) activestate . com, 14 Apr 2004
 
 Special thanks for contributions to Jan Dubois, Slaven Rezic, Paul Cochrane,
-Huck Finn.
+Huck Finn, Christopher Chavez, SJ Luo.
 
 =head1 COPYRIGHT
 
