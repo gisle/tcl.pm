@@ -88,64 +88,61 @@ if ($usestubs) {
 
 if (defined($libpath) && defined($incpath)) {
     # do nothing - set on command line
-} elsif (!defined($tclconfig) && defined($arch) && $usestubs) {
-    $incpath = "-Itcl-core/include";
-    $libpath = "-Ltcl-core/$arch -l$stub";
-    if ($^O eq 'darwin') {
-	# OS X also requires the Carbon framework by default
-	$libpath .= " -framework Carbon";
-    }
-} elsif ($tclconfig || $^O eq 'darwin') {
-    unless ($tclconfig) {
-       open(TCLSH, "$tclsh tclcfg.tcl |") or _die "error starting tclsh: $!\n";
-       my $tclcfg = join '', <TCLSH>;
-       close(TCLSH);
-       my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)\n/gm;
-       $tclconfig = $tclcfg{'tclConfig.sh'};
-    }
-    _die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
-
-    # Retrieve all info based on tclConfig.sh
-    my $variant    = ($usestubs ? "_STUB" : "");
-    $variant       = "_BUILD$variant" if $buildspec;
-    my $libspecvar = "TCL${variant}_LIB_SPEC";
-    my %tclcfg;
-    process_tclconfig($tclconfig, \%tclcfg);
-    _die "Tcl requires Tcl v8.4 or greater, found '$tclcfg{TCL_VERSION}'\n"
-	unless (defined $tclcfg{'TCL_VERSION'}
-		&& $tclcfg{'TCL_VERSION'} >= 8.4);
-    $libpath = $tclcfg{$libspecvar};
-    $incpath = $tclcfg{'TCL_INCLUDE_SPEC'};
-    if ($usestubs) {
-	if ($^O eq 'MSWin32') {
-	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/bin\\\"";
-	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_DLL_FILE'}\\\""; 
-	} elsif ($^O eq 'darwin' && $tclcfg{'TCL_STUB_LIB_PATH'} =~ /\.framework/ ) {
-	    (my $fmk = $tclcfg{'TCL_STUB_LIB_PATH'}) =~ s/(?<=\.framework).*//;
-	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"";
-	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\"";
-	    @extraargs = (dynamic_lib => {OTHERLDFLAGS => "-framework Carbon"});
-	} else {
-	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/lib\\\"";
-	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\""; 
-	}
-    }
 } else {
-    open(TCLSH, "$tclsh tclcfg.tcl |") or _die "error starting tclsh: $!\n";
+    # otherwise we *require* working tclsh; to avoid bogus FAIL reports
+    # even on $^O eq 'darwin'
+    # When user has its own tclConfig.sh with --tclconfig=..., then we
+    # owerwrite values in %tclcfg
+    # but still we use workable tclsh in order to avoid bigus FAIL;
+
+    open(TCLSH, "$tclsh tclcfg.tcl |") or _die "error starting $tclsh: $!\n";
     my $tclcfg = join '', <TCLSH>;
     close(TCLSH);
     print $tclcfg;
     my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)\n/gm;
 
     # This is to allow propagation of this value to sub-Makefile.PLs
-    $ENV{'TCLSH_PROG'} = $tclsh;
+    $ENV{'TCLSH_PROG'} = $tclsh; # <-- candidate for deletion; WARN!
 
-    if (0 && -f $tclcfg{'tclConfig.sh'}) {
+    if (!defined($tclconfig) && defined($arch) && $usestubs) {
+	$incpath = "-Itcl-core/include";
+	$libpath = "-Ltcl-core/$arch -l$stub";
+	if ($^O eq 'darwin') {
+	    # OS X also requires the Carbon framework by default
+	    $libpath .= " -framework Carbon";
+	}
+    } elsif ($tclconfig || $^O eq 'darwin') {
+        $tclconfig = $tclcfg{'tclConfig.sh'} unless ($tclconfig);
+	_die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
+
 	# Retrieve all info based on tclConfig.sh
-	# Don't do this unless the user passes --tclconfig
-	process_tclconfig($tclcfg{'tclConfig.sh'}, \%tclcfg);
-	# libpath/incpath vars need to be set here if used ...
+	my $variant    = ($usestubs ? "_STUB" : "");
+	$variant       = "_BUILD$variant" if $buildspec;
+	my $libspecvar = "TCL${variant}_LIB_SPEC";
+
+	process_tclconfig($tclconfig, \%tclcfg);
+	_die "Tcl requires Tcl v8.4 or greater, found '$tclcfg{TCL_VERSION}'\n"
+	    unless (defined $tclcfg{'TCL_VERSION'}
+		    && $tclcfg{'TCL_VERSION'} >= 8.4);
+	$libpath = $tclcfg{$libspecvar};
+	$incpath = $tclcfg{'TCL_INCLUDE_SPEC'};
+	if ($usestubs) {
+	    if ($^O eq 'MSWin32') {
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/bin\\\"";
+		$defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_DLL_FILE'}\\\""; 
+	    } elsif ($^O eq 'darwin' && $tclcfg{'TCL_STUB_LIB_PATH'} =~ /\.framework/ ) {
+		(my $fmk = $tclcfg{'TCL_STUB_LIB_PATH'}) =~ s/(?<=\.framework).*//;
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"";
+		$defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\"";
+		@extraargs = (dynamic_lib => {OTHERLDFLAGS => "-framework Carbon"});
+	    } else {
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/lib\\\"";
+		$defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\""; 
+	    }
+	}
     } else {
+	# no --tclconfig=... -> get values from ./tclcfg.tcl
+
 	my $tclver = $tclcfg{tcl_version};
 
 	# currently version must be 8.4+
@@ -215,7 +212,6 @@ WriteMakefile(
     DEFINE => $defs,
     @extraargs,
 );
-
 #EOS
 
 sub process_tclconfig {
