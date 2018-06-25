@@ -65,9 +65,11 @@ GetOptions("tclsh=s", \$tclsh,         # Use this tclsh executable as a
 	   "library=s", \$libpath,     # Use this specific Tcl library
 	   "include=s", \$incpath,     # Use this specific include path
 	   "define=s", \$defs,         # Use this specific set of defines
-	  )
-    || _die <<EOT;
-
+	   "help!",    \my $help,      # --help
+) || usage();
+usage() if $help;
+sub usage {
+    _die <<EOT;
 Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>]
                         [--buildspec] [--nousestubs] [<makemaker opts>...]
 
@@ -75,8 +77,8 @@ or for expert compilation:
 
        perl --library=-l/path/to/tcl(stub).a --include=-I/path/to/tcl/include
             --define="-DLIB_RUNTIME_DIR=... -DTCL_LIB_FILE=..."
-
 EOT
+}
 
 if ($usestubs) {
     $defs .= " -DUSE_TCL_STUBS";
