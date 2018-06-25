@@ -92,8 +92,8 @@ if (defined($libpath) && defined($incpath)) {
     # otherwise we *require* working tclsh; to avoid bogus FAIL reports
     # even on $^O eq 'darwin'
     # When user has its own tclConfig.sh with --tclconfig=..., then we
-    # owerwrite values in %tclcfg
-    # but still we use workable tclsh in order to avoid bigus FAIL;
+    # overwrite values in %tclcfg
+    # but still we use workable tclsh in order to avoid bogus FAIL;
 
     open(TCLSH, "$tclsh tclcfg.tcl |") or _die "error starting $tclsh: $!\n";
     my $tclcfg = join '', <TCLSH>;
@@ -166,11 +166,9 @@ if (defined($libpath) && defined($incpath)) {
 	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.so\\\"" if $usestubs; 
 	}
 	elsif ($^O eq 'hpux') {
-	    #$tclver = '';
 	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.sl\\\"" if $usestubs;
 	}
 	else {
-	    #$tclver = '';
 	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.so\\\"" if $usestubs; 
 	}
 	$libpath .= " -ltcl$buildtype$tclver";
