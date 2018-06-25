@@ -101,6 +101,10 @@ if (defined($libpath) && defined($incpath)) {
     print $tclcfg;
     my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)\n/gm;
 
+    if ($^O eq 'darwin' && !defined($tclconfig)) {
+        $tclconfig = $tclcfg{'tclConfig.sh'};
+    }
+
     # This is to allow propagation of this value to sub-Makefile.PLs
     $ENV{'TCLSH_PROG'} = $tclsh; # <-- candidate for deletion; WARN!
 
@@ -111,19 +115,16 @@ if (defined($libpath) && defined($incpath)) {
 	    # OS X also requires the Carbon framework by default
 	    $libpath .= " -framework Carbon";
 	}
-    } elsif ($tclconfig || $^O eq 'darwin') {
-        $tclconfig = $tclcfg{'tclConfig.sh'} unless ($tclconfig);
+    } elsif ($tclconfig) {
 	_die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
 
-	# Retrieve all info based on tclConfig.sh
 	my $variant    = ($usestubs ? "_STUB" : "");
 	$variant       = "_BUILD$variant" if $buildspec;
 	my $libspecvar = "TCL${variant}_LIB_SPEC";
 
+	# Retrieve all info based on tclConfig.sh
 	process_tclconfig($tclconfig, \%tclcfg);
-	_die "Tcl requires Tcl v8.4 or greater, found '$tclcfg{TCL_VERSION}'\n"
-	    unless (defined $tclcfg{'TCL_VERSION'}
-		    && $tclcfg{'TCL_VERSION'} >= 8.4);
+
 	$libpath = $tclcfg{$libspecvar};
 	$incpath = $tclcfg{'TCL_INCLUDE_SPEC'};
 	if ($usestubs) {
@@ -144,11 +145,6 @@ if (defined($libpath) && defined($incpath)) {
 	# no --tclconfig=... -> get values from ./tclcfg.tcl
 
 	my $tclver = $tclcfg{tcl_version};
-
-	# currently version must be 8.4+
-	my ($vmaj,$vmin) = ($tclver =~ /^(\d+)\.(\d+)/);
-	_die "Tcl requires Tcl v8.4 or greater, found '$vmaj.$vmin'\n"
-	    if ($vmaj < 8 || ($vmaj == 8 && $vmin < 4));
 
 	if ($tclcfg{tcl_library} =~ /^(.*)[\\\/]lib[\\\/]/) {
 	    $libpath = "-L$1/lib";
@@ -173,6 +169,9 @@ if (defined($libpath) && defined($incpath)) {
 	}
 	$libpath .= " -ltcl$buildtype$tclver";
     }
+    # version must be 8.4+
+    _die "Tcl requires Tcl v8.4 or greater, found '$tclcfg{tcl_version}'\n"
+	if (defined $tclcfg{tcl_version} && $tclcfg{tcl_version} <8.4);
 }
 
 print "LIBS   = $libpath\n";
@@ -222,14 +221,15 @@ sub process_tclconfig {
     print "Using config data in $tclconfig\n";
     my $tclcfg = join '', <TCLSH>;
     close(TCLSH);
-    %$hashref = $tclcfg =~ /^(\w+)=['"]?(.*?)["']?\n/gm;
+    %$hashref = $tclcfg =~ /^(\w+)=['"]?(.*?)["']?$/gm;
 
     for my $k (keys %$hashref) {
 	# Handle sh subs like ${TCL_DBGX}
 	$hashref->{$k} =~ s/\$\{(\w+)\}/(exists $hashref->{$1} ? $hashref->{$1} : $&)/eg;
 	# Handle any cygdrive-style paths
-	$hashref->{$k} =~ s,/cygdrive/(\w)/,$1:/,ig;
+	$hashref->{$k} =~ s{/cygdrive/(\w)/}{$1:/}ig;
     }
+    $hashref->{tcl_version} = $hashref->{TCL_VERSION};
 }
 
 sub MY::libscan {
