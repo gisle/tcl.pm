@@ -49,7 +49,7 @@ sub _die ($) {
 
 GetOptions("tclsh=s", \(my $tclsh='tclsh'), # Use this tclsh executable as a
                                        # base to find the lib info needed
-	   "tclconfig=s"\(my $tclconfig=''),# Use the specified Tcl config file
+	   "tclconfig=s",\(my $tclconfig=''),# Use the specified Tcl config file
                                        # instead of basing the values on
                                        # the tclsh exe found
 	   "buildspec", \my $buildspec,# Used with --tclconfig, use the
