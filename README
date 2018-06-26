@@ -19,12 +19,12 @@ DESCRIPTION
 
 Build in the usual way for a perl extension:
 
-1. Do not tweak Makefile.PL. Rather, specify parameters to Makefile.PL
+1. Do not tweak Makefile.PL, rather - specify parameters to Makefile.PL.
 Use --help option to find out supported parameters to Makefile.PL:
 
    perl Makefile.PL --help
 
-Normally, you do not need any parameters, default ones should be fine.
+Usualy, you do not need any parameters, default ones should be fine.
 
 2. perl Makefile.PL
    make

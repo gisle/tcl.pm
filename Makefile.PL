@@ -6,19 +6,14 @@
 # $tclsh variable below) as long as 'tclsh' does not work in their case
 
 use strict;
-use Getopt::Long qw(GetOptions);
+use Getopt::Long;
 use ExtUtils::MakeMaker;
 use Config;
 
-my $tclsh = 'tclsh';
-my $tclconfig;
-my $buildspec;
-my $usestubs = ($^O eq 'MSWin32' ? 0 : 1);
-my $libpath;
-my $incpath;
-my $defs = "";
-my $buildtype = "";
-my @extraargs;
+my $usestubs = $^O eq 'MSWin32'? 0 : 1; # we prefer usestubs, but on windows
+# default is not use them, because stubs lib that come with AS TCL is impossible
+# to link with GCC which comes with strawberry perl; please create a ticket for
+# this;
 
 my $arch;
 my $stub = "tclstub8.4";
@@ -52,19 +47,18 @@ sub _die ($) {
     exit 0;
 }
 
-GetOptions("tclsh=s", \$tclsh,         # Use this tclsh executable as a
+GetOptions("tclsh=s", \(my $tclsh='tclsh'), # Use this tclsh executable as a
                                        # base to find the lib info needed
-	   "tclconfig=s", \$tclconfig, # Use the specified Tcl config file
+	   "tclconfig=s"\(my $tclconfig=''),# Use the specified Tcl config file
                                        # instead of basing the values on
                                        # the tclsh exe found
-	   "buildspec", \$buildspec,   # Used with --tclconfig, use the
+	   "buildspec", \my $buildspec,# Used with --tclconfig, use the
                                        # build (instead of install) values
                                        # for determining lib info
-	   "usestubs!", \$usestubs,    # we want to use the Tcl stubs
-                                       # mechanism by default
-	   "library=s", \$libpath,     # Use this specific Tcl library
-	   "include=s", \$incpath,     # Use this specific include path
-	   "define=s", \$defs,         # Use this specific set of defines
+	   "usestubs!", \$usestubs,    # we want to use the Tcl stubs mechanism by default
+	   "library=s", \my $libpath,  # Use this specific Tcl library
+	   "include=s", \my $incpath,  # Use this specific include path
+	   "define=s", \(my $defs=''), # Use this specific set of defines
 	   "help!",    \my $help,      # --help
 ) || usage();
 usage() if $help;
@@ -80,6 +74,8 @@ or for expert compilation:
 EOT
 }
 
+my $buildtype = "";
+my @extraargs;
 if ($usestubs) {
     $defs .= " -DUSE_TCL_STUBS";
     $buildtype = "stub";
@@ -104,6 +100,9 @@ if (defined($libpath) && defined($incpath)) {
     my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)\n/gm;
 
     if ($^O eq 'darwin' && !defined($tclconfig)) {
+        $tclconfig = $tclcfg{'tclConfig.sh'};
+    }
+    if ($^O eq 'MSWin32' && !defined($tclconfig) && !$usestubs) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
 
@@ -131,7 +130,7 @@ if (defined($libpath) && defined($incpath)) {
 	$incpath = $tclcfg{'TCL_INCLUDE_SPEC'};
 	if ($usestubs) {
 	    if ($^O eq 'MSWin32') {
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/bin\\\"";
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}\\\"";
 		$defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_DLL_FILE'}\\\""; 
 	    } elsif ($^O eq 'darwin' && $tclcfg{'TCL_STUB_LIB_PATH'} =~ /\.framework/ ) {
 		(my $fmk = $tclcfg{'TCL_STUB_LIB_PATH'}) =~ s/(?<=\.framework).*//;
@@ -179,6 +178,7 @@ if (defined($libpath) && defined($incpath)) {
 print "LIBS   = $libpath\n";
 print "INC    = $incpath\n";
 print "DEFINE = $defs\n";
+print "tclConfig.sh = $tclconfig\n";
 
 if ($^O eq 'darwin') {
     # darwin has a broken ranlib that requires you to run it anytime

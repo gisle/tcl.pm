@@ -271,10 +271,10 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    if (*pos == '.') {
 		pos++;
 	    }
-	    *pos = '9'; /* count down from '8' to '4', and then to '0', it is also ok*/
-	    while (!handle && (--*pos >= '0')) {
+	    *pos = '9'; /* count down from '9' to '0': 8.9, 8.8, 8.7, 8.6, ... */
+	    do {
 		handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
-	    }
+	    } while (!handle && (--*pos >= '0'));
 	    if (!handle) {
 		warn("failed all posible tcl vers 8.x from 9 down to 0");
 		return TCL_ERROR;
