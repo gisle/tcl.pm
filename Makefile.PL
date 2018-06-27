@@ -50,7 +50,7 @@ GetOptions(
    "tclsh=s",                  # Use this tclsh executable as a base to find 
        \(my $tclsh='tclsh'),   # the lib info needed
    "tclconfig=s",              # Use the specified Tcl config file instead 
-       \(my $tclconfig=''),    # of basing the values on the tclsh exe found
+       \my $tclconfig,         # of basing the values on the tclsh exe found
    "buildspec",                # Used with --tclconfig, use the build 
        \my $buildspec,         # (instead of install) values for determining lib info
    "usestubs!", \$usestubs,    # we want to use the Tcl stubs mechanism by default
@@ -125,7 +125,7 @@ if (defined($libpath) && defined($incpath)) {
 	process_tclconfig($tclconfig, \%tclcfg);
 
 	$libpath = $tclcfg{$libspecvar};
-	$incpath = $tclcfg{'TCL_INCLUDE_SPEC'};
+	$incpath = $tclcfg{TCL_INCLUDE_SPEC};
 	if ($usestubs) {
 	    if ($^O eq 'MSWin32') {
 		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}\\\"";
@@ -216,12 +216,9 @@ sub process_tclconfig {
     my $tclconfig = shift;
     my $hashref   = shift;
 
-    open(TCLSH, $tclconfig)
-	or _die "error opening file '$tclconfig': $!\n";
+    open my $fh, $tclconfig or _die "error opening file '$tclconfig': $!\n";
     print "Using config data in $tclconfig\n";
-    my $tclcfg = join '', <TCLSH>;
-    close(TCLSH);
-    %$hashref = $tclcfg =~ /^(\w+)=['"]?(.*?)["']?$/gm;
+    %$hashref = (join '', <$fh>) =~ /^(\w+)=['"]?(.*?)["']?$/gm;
 
     for my $k (keys %$hashref) {
 	# Handle sh subs like ${TCL_DBGX}
