@@ -10,11 +10,6 @@ use Getopt::Long;
 use ExtUtils::MakeMaker;
 use Config;
 
-my $usestubs = $^O eq 'MSWin32'? 0 : 1; # we prefer usestubs, but on windows
-# default is to not use them, because stubs lib that come with AS TCL is impossible
-# to link with GCC which comes with strawberry perl; please create a ticket for
-# this; VKON 27-06-2018
-
 my $arch = "$^O";
 my $stub = "tclstub8.4";
 
@@ -47,28 +42,41 @@ sub _die ($) {
 }
 
 GetOptions(
-   "tclsh=s",                  # Use this tclsh executable as a base to find 
-       \(my $tclsh='tclsh'),   # the lib info needed
-   "tclconfig=s",              # Use the specified Tcl config file instead 
-       \my $tclconfig,         # of basing the values on the tclsh exe found
-   "buildspec",                # Used with --tclconfig, use the build 
-       \my $buildspec,         # (instead of install) values for determining lib info
-   "usestubs!", \$usestubs,    # we want to use the Tcl stubs mechanism by default
-   "library=s", \my $libpath,  # Use this specific Tcl library
-   "include=s", \my $incpath,  # Use this specific include path
-   "define=s", \(my $defs=''), # Use this specific set of defines
-   "help!",    \my $help,      # --help
+   "tclsh=s",     \(my $tclsh='tclsh'),
+   "tclconfig=s", \ my $tclconfig,
+   "buildspec",   \ my $buildspec,
+   "usestubs!",   \(my $usestubs = $^O eq 'MSWin32'? 0 : 1),
+	# we prefer usestubs, but on windows default is to not use them, because
+	# stubs lib that come with AS TCL is impossible to link with GCC which 
+	# comes with strawberry perl; Have a ticket for this; (XXX) VKON 27-06-2018
+   "library=s",   \ my $libpath,
+   "include=s",   \ my $incpath,
+   "define=s",    \(my $defs=''),
+   "help!",       \ my $help,   
 ) || usage();
 usage() if $help;
 sub usage {
-    _die <<EOT;
-Usage: perl Makefile.PL [--tclsh <path>] [--tclconfig <path>]
-                        [--buildspec] [--nousestubs] [<makemaker opts>...]
+    _die <<'EOT';
+Most common usage:
+ perl Makefile.PL          
 
-or for expert compilation:
+Customised usage:
+ perl Makefile.PL      \
+  [--tclsh <path>]     \ # Use this tclsh executable as a base to find the lib info needed
+  [--tclconfig <path>] \ # Use this Tcl config file (not tclConfig.sh from the tclsh above)
+  [--buildspec]        \ # Used with --tclconfig, use the 'build' (not 'install')
+                       \ # values  for determining lib info.... THIS OPTION WILL GO AWAY 
+  [--nousestubs]       \ # (do not) use the Tcl stubs mechanism
+  [--library=...]      \ # Use this specific Tcl library
+  [--include=...]      \ # Use this specific include path
+  [--define=...]       \ # Use this specific set of defines
+  [--help]             \ # --help
+  [<makemaker opts>]
 
-       perl --library=-l/path/to/tcl(stub).a --include=-I/path/to/tcl/include
-            --define="-DLIB_RUNTIME_DIR=... -DTCL_LIB_FILE=..."
+For compilation against tcl at given specific location
+ perl Makefile.PL --library=-l/path/to/tcl(stub).a         \
+    --include=-I/path/to/tcl/include                       \
+    --define="-DLIB_RUNTIME_DIR=... -DTCL_LIB_FILE=..."
 EOT
 }
 
@@ -91,11 +99,10 @@ if (defined($libpath) && defined($incpath)) {
     # overwrite values in %tclcfg
     # but still we use workable tclsh in order to avoid bogus FAIL;
 
-    open(TCLSH, "$tclsh tclcfg.tcl |") or _die "error starting $tclsh: $!\n";
-    my $tclcfg = join '', <TCLSH>;
-    close(TCLSH);
+    open(my $fh, "$tclsh tclcfg.tcl |") or _die "error starting $tclsh: $!\n";
+    my $tclcfg = join '', <$fh>;
     print $tclcfg;
-    my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)\n/gm;
+    my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)$/gm;
 
     if ($^O eq 'darwin' && !defined($tclconfig)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
@@ -103,9 +110,6 @@ if (defined($libpath) && defined($incpath)) {
     if ($^O eq 'MSWin32' && !defined($tclconfig) && !$usestubs) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
-
-    # This is to allow propagation of this value to sub-Makefile.PLs
-    $ENV{'TCLSH_PROG'} = $tclsh; # <-- candidate for deletion; WARN!
 
     if (!defined($tclconfig) && defined($arch) && $usestubs) {
 	$incpath = "-Itcl-core/include";
@@ -117,12 +121,25 @@ if (defined($libpath) && defined($incpath)) {
     } elsif ($tclconfig) {
 	_die "Tcl config file '$tclconfig' not found\n" unless (-f $tclconfig);
 
-	my $variant    = ($usestubs ? "_STUB" : "");
-	$variant       = "_BUILD$variant" if $buildspec;
-	my $libspecvar = "TCL${variant}_LIB_SPEC";
-
 	# Retrieve all info based on tclConfig.sh
 	process_tclconfig($tclconfig, \%tclcfg);
+
+	# want to decide, which Tcl config var to use for linker, among:
+	# TCL_(BUILD_)?(STUB_)?LIB_SPEC
+	# this gives us 4:
+	# TCL_LIB_SPEC/TCL_BUILD_LIB_SPEC/TCL_STUB_LIB_SPEC/TCL_BUILD_STUB_LIB_SPEC
+	my $libspecvar = "TCL".($buildspec?"_BUILD":"").($usestubs ? "_STUB" : "")."_LIB_SPEC";
+=comment
+# String to pass to linker to pick up the Tcl library from its build directory.
+TCL_BUILD_LIB_SPEC=''
+# String to pass to linker to pick up the Tcl library from its installed directory.
+TCL_LIB_SPEC='C:\apps\tcl-866-as86\lib\tcl86t.lib'
+# String to pass to linker to pick up the Tcl stub library from its build directory.
+TCL_BUILD_STUB_LIB_SPEC='-L.\Release_VC13 tclstub86.lib'
+# String to pass to linker to pick up the Tcl stub library from its installed directory.
+TCL_STUB_LIB_SPEC='-LC:\apps\tcl-866-as86\lib tclstub86.lib'
+=cut
+	#WARNING: this $buildspec var IS GOING AWAY; things are about 'installed' directory
 
 	$libpath = $tclcfg{$libspecvar};
 	$incpath = $tclcfg{TCL_INCLUDE_SPEC};
