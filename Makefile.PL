@@ -2,8 +2,8 @@
 
 # before running this script make sure you have 'tclsh' in your path, 
 # and this 'tcl' distribution is required one.
-# FreeBSD users may want to modify name of tcl interpreter (this is
-# $tclsh variable below) as long as 'tclsh' does not work in their case
+# FreeBSD users may want to modify name of tcl interpreter with --tclsh=tclsh86
+# as long as 'tclsh' does not work in their case
 
 use strict;
 use Getopt::Long;
@@ -11,11 +11,11 @@ use ExtUtils::MakeMaker;
 use Config;
 
 my $usestubs = $^O eq 'MSWin32'? 0 : 1; # we prefer usestubs, but on windows
-# default is not use them, because stubs lib that come with AS TCL is impossible
+# default is to not use them, because stubs lib that come with AS TCL is impossible
 # to link with GCC which comes with strawberry perl; please create a ticket for
-# this;
+# this; VKON 27-06-2018
 
-my $arch;
+my $arch = "$^O";
 my $stub = "tclstub8.4";
 
 # These need updating as more platforms are added to tcl-core/ area
@@ -29,7 +29,7 @@ if ($^O eq "MSWin32") {
     $arch = "$^O-x86" if ($Config{archname} =~ /86/);
     $arch = "$^O-sparc" if ($Config{archname} =~ /sun4/);
 } elsif ($^O eq "aix") {
-    $arch = "$^O";
+    # $arch = "$^O";
 } elsif ($^O eq "hpux") {
     $arch = "$^O-ia64" if ($Config{archname} =~ /ia64/i);
     $arch = "$^O-parisc" if ($Config{archname} =~ /pa-risc/i);
@@ -40,26 +40,24 @@ if ($^O eq "MSWin32") {
 }
 
 sub _die ($) {
-    # now CPAN smokers report FAIL if Makefile.PL dies, it
-    # should exit with status 0
+    # CPAN smokers report FAIL if Makefile.PL dies, it should exit with status 0
     my $err = shift;
     warn $err;
     exit 0;
 }
 
-GetOptions("tclsh=s", \(my $tclsh='tclsh'), # Use this tclsh executable as a
-                                       # base to find the lib info needed
-	   "tclconfig=s",\(my $tclconfig=''),# Use the specified Tcl config file
-                                       # instead of basing the values on
-                                       # the tclsh exe found
-	   "buildspec", \my $buildspec,# Used with --tclconfig, use the
-                                       # build (instead of install) values
-                                       # for determining lib info
-	   "usestubs!", \$usestubs,    # we want to use the Tcl stubs mechanism by default
-	   "library=s", \my $libpath,  # Use this specific Tcl library
-	   "include=s", \my $incpath,  # Use this specific include path
-	   "define=s", \(my $defs=''), # Use this specific set of defines
-	   "help!",    \my $help,      # --help
+GetOptions(
+   "tclsh=s",                  # Use this tclsh executable as a base to find 
+       \(my $tclsh='tclsh'),   # the lib info needed
+   "tclconfig=s",              # Use the specified Tcl config file instead 
+       \(my $tclconfig=''),    # of basing the values on the tclsh exe found
+   "buildspec",                # Used with --tclconfig, use the build 
+       \my $buildspec,         # (instead of install) values for determining lib info
+   "usestubs!", \$usestubs,    # we want to use the Tcl stubs mechanism by default
+   "library=s", \my $libpath,  # Use this specific Tcl library
+   "include=s", \my $incpath,  # Use this specific include path
+   "define=s", \(my $defs=''), # Use this specific set of defines
+   "help!",    \my $help,      # --help
 ) || usage();
 usage() if $help;
 sub usage {
@@ -155,18 +153,18 @@ if (defined($libpath) && defined($incpath)) {
 
 	if ($^O eq 'MSWin32') {
 	    $tclver=~s/\.//;
-	    $defs .= " -DTCL_LIB_FILE=\\\"tcl$tclver.dll\\\"" if $usestubs; 
+	    $defs .= " -DTCL_LIB_FILE=\\\"tcl$tclver.$Config{so}\\\"" if $usestubs; 
 	}
-	elsif ($^O eq 'freebsd') {
+	elsif ($^O eq 'freebsd' or $^O eq 'netbsd') {
 	    $tclver=~s/\.//;
 	    $tclsh=~/([\d.]+)$/ and $incpath .= " -I/usr/local/include/tcl$1";
-	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.so\\\"" if $usestubs; 
+	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.$Config{so}\\\"" if $usestubs; 
 	}
 	elsif ($^O eq 'hpux') {
-	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.sl\\\"" if $usestubs;
+	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.$Config{so}\\\"" if $usestubs;
 	}
 	else {
-	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.so\\\"" if $usestubs; 
+	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.$Config{so}\\\"" if $usestubs; 
 	}
 	$libpath .= " -ltcl$buildtype$tclver";
     }
