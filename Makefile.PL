@@ -10,7 +10,7 @@ use Getopt::Long;
 use ExtUtils::MakeMaker;
 use Config;
 
-my $arch = "$^O";
+my $arch;
 my $stub = "tclstub8.4";
 
 # These need updating as more platforms are added to tcl-core/ area
@@ -24,7 +24,7 @@ if ($^O eq "MSWin32") {
     $arch = "$^O-x86" if ($Config{archname} =~ /86/);
     $arch = "$^O-sparc" if ($Config{archname} =~ /sun4/);
 } elsif ($^O eq "aix") {
-    # $arch = "$^O";
+    $arch = "$^O";
 } elsif ($^O eq "hpux") {
     $arch = "$^O-ia64" if ($Config{archname} =~ /ia64/i);
     $arch = "$^O-parisc" if ($Config{archname} =~ /pa-risc/i);
@@ -44,15 +44,13 @@ sub _die ($) {
 GetOptions(
    "tclsh=s",     \(my $tclsh='tclsh'),
    "tclconfig=s", \ my $tclconfig,
-   "usestubs!",   \(my $usestubs = $^O =~ /^solaris|linux|hpux|darwin|cygwin|aix$/? 1 : 0),
+   "usestubs!",   \(my $usestubs = $^O =~ /^solaris|linux|hpux|darwin|cygwin|aix|freebsd|netbsd|openbsd$/? 1 : 0),
 	# we prefer usestubs, but on windows default is to not use them, because
 	# stubs lib that come with AS TCL is impossible to link with GCC which 
 	# comes with strawberry perl; Have a ticket for this; (XXX) VKON 27-06-2018
 	#
-	# ... also freebsd, which have problems with stubs currently
-	# http://www.cpantesters.org/cpan/report/0bb213fc-7a55-11e8-8df7-db842dc43508
-	#
-	# ... but also any other $^O which we do not have in 'tcl-core' dir
+	# ... also any other $^O which we do not have in 'tcl-core' dir
+	# except for freebsd and netbsd and openbsd
 	#
    "library=s",   \ my $libpath,
    "include=s",   \ my $incpath,
@@ -74,7 +72,7 @@ Customised usage:
   [--include=...]      \ # Use this specific include path
   [--define=...]       \ # Use this specific set of defines
   [--help]             \ # --help
-  [<makemaker opts>]
+  [<makemaker opts>]     # e.g. LINKTYPE=STATIC
 
 For compilation against tcl at given specific location
  perl Makefile.PL --library=-l/path/to/tcl(stub).a         \
@@ -83,11 +81,9 @@ For compilation against tcl at given specific location
 EOT
 }
 
-my $buildtype = "";
 my @extraargs;
 if ($usestubs) {
     $defs .= " -DUSE_TCL_STUBS";
-    $buildtype = "stub";
 }
 
 # If using stubs, we will set the LIB_RUNTIME_DIR and TCL_LIB_FILE
@@ -113,7 +109,7 @@ if (defined($libpath) && defined($incpath)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
 
-    if (!defined($tclconfig) && defined($arch) && $usestubs) {
+    if (!defined($tclconfig) && $arch && $usestubs) {
 	$incpath = "-Itcl-core/include";
 	$libpath = "-Ltcl-core/$arch -l$stub";
 	if ($^O eq 'darwin') {
@@ -130,16 +126,16 @@ if (defined($libpath) && defined($incpath)) {
 	$incpath = $tclcfg{TCL_INCLUDE_SPEC};
 	if ($usestubs) {
 	    if ($^O eq 'MSWin32') {
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}\\\"";
-		$defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_DLL_FILE'}\\\""; 
-	    } elsif ($^O eq 'darwin' && $tclcfg{'TCL_STUB_LIB_PATH'} =~ /\.framework/ ) {
-		(my $fmk = $tclcfg{'TCL_STUB_LIB_PATH'}) =~ s/(?<=\.framework).*//;
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"";
-		$defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\"";
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}\\\"" .
+		         " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_DLL_FILE}\\\""; 
+	    } elsif ($^O eq 'darwin' && $tclcfg{TCL_STUB_LIB_PATH} =~ /\.framework/ ) {
+		(my $fmk = $tclcfg{TCL_STUB_LIB_PATH}) =~ s/(?<=\.framework).*//;
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"" .
+		         " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\"";
 		@extraargs = (dynamic_lib => {OTHERLDFLAGS => "-framework Carbon"});
 	    } else {
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{'TCL_EXEC_PREFIX'}/lib\\\"";
-		$defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{'TCL_LIB_FILE'}\\\""; 
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}/lib\\\"" .
+		         " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\""; 
 	    }
 	}
     } else {
@@ -168,7 +164,7 @@ if (defined($libpath) && defined($incpath)) {
 	else {
 	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.$Config{so}\\\"" if $usestubs; 
 	}
-	$libpath .= " -ltcl$buildtype$tclver";
+	$libpath .= " -ltcl" . ($usestubs?"stub":"") . $tclver;
     }
     # version must be 8.4+
     _die "Tcl requires Tcl v8.4 or greater, found '$tclcfg{tcl_version}'\n"
@@ -178,7 +174,7 @@ if (defined($libpath) && defined($incpath)) {
 print "LIBS   = $libpath\n";
 print "INC    = $incpath\n";
 print "DEFINE = $defs\n";
-print "tclConfig.sh = $tclconfig\n";
+print "tclConfig.sh = ", $tclconfig || "", "\n";
 
 if ($^O eq 'darwin') {
     # darwin has a broken ranlib that requires you to run it anytime
