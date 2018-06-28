@@ -78,7 +78,7 @@ Invoke I<Tcl_Init> on the interpreter.
 
 =item $interp->CreateSlave (NAME, SAFE)
 
-Invoke I<Tcl_CreateSlave> on the interpeter.  Name is arbitrary.
+Invoke I<Tcl_CreateSlave> on the interpreter.  Name is arbitrary.
 The safe variable, if true, creates a safe sandbox interpreter.
  See: http://www.tcl.tk/software/plugin/safetcl.html
       http://www.tcl.tk/man/tcl8.4/TclCmd/safe.htm
@@ -130,7 +130,7 @@ created using CreateCommand subroutine (see below).
 2.  All references to scalars will be substituted with names of Tcl variables
 transformed appropriately.
 
-These first two items allows one to write and expect it to work properly such
+These first two items allow one to write and expect it to work properly such
 code as:
 
   my $r = 'aaaa';
@@ -542,7 +542,7 @@ unless (defined $DL_PATH) {
     $DL_PATH = $ENV{PERL_TCL_DL_PATH} || $ENV{PERL_TCL_DLL} || "";
 }
 
-=ignore
+=for ignore
 sub Tcl::seek_tkkit {
     # print STDERR "wohaaa!\n";
     unless ($DL_PATH) {
