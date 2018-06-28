@@ -125,18 +125,14 @@ if (defined($libpath) && defined($incpath)) {
 	$libpath = $usestubs ? $tclcfg{TCL_STUB_LIB_SPEC} : $tclcfg{TCL_LIB_SPEC};
 	$incpath = $tclcfg{TCL_INCLUDE_SPEC};
 	if ($usestubs) {
-	    if ($^O eq 'MSWin32') {
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}\\\"" .
-		         " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_DLL_FILE}\\\""; 
-	    } elsif ($^O eq 'darwin' && $tclcfg{TCL_STUB_LIB_PATH} =~ /\.framework/ ) {
+	    if ($^O eq 'darwin' && $tclcfg{TCL_STUB_LIB_PATH} =~ /\.framework/ ) {
 		(my $fmk = $tclcfg{TCL_STUB_LIB_PATH}) =~ s/(?<=\.framework).*//;
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"" .
-		         " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\"";
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"";
 		@extraargs = (dynamic_lib => {OTHERLDFLAGS => "-framework Carbon"});
 	    } else {
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}/lib\\\"" .
-		         " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\""; 
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}/lib\\\"";
 	    }
+	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\"";
 	}
     } else {
 	# no --tclconfig=... -> get values from ./tclcfg.tcl
@@ -153,13 +149,10 @@ if (defined($libpath) && defined($incpath)) {
 	    $tclver=~s/\.//;
 	    $defs .= " -DTCL_LIB_FILE=\\\"tcl$tclver.$Config{so}\\\"" if $usestubs; 
 	}
-	elsif ($^O eq 'freebsd' or $^O eq 'netbsd') {
+	elsif ($^O eq 'freebsd' or $^O eq 'openbsd' or $^O eq 'netbsd') {
 	    $tclver=~s/\.//;
 	    $tclsh=~/([\d.]+)$/ and $incpath .= " -I/usr/local/include/tcl$1";
 	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.$Config{so}\\\"" if $usestubs; 
-	}
-	elsif ($^O eq 'hpux') {
-	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.$Config{so}\\\"" if $usestubs;
 	}
 	else {
 	    $defs .= " -DTCL_LIB_FILE=\\\"libtcl$tclver.$Config{so}\\\"" if $usestubs; 
