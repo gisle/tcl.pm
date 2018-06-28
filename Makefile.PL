@@ -44,12 +44,16 @@ sub _die ($) {
 GetOptions(
    "tclsh=s",     \(my $tclsh='tclsh'),
    "tclconfig=s", \ my $tclconfig,
-   "usestubs!",   \(my $usestubs = $^O =~ /^MSWin32|freebsd|netbsd$/? 0 : 1),
+   "usestubs!",   \(my $usestubs = $^O =~ /^solaris|linux|hpux|darwin|cygwin|aix$/? 1 : 0),
 	# we prefer usestubs, but on windows default is to not use them, because
 	# stubs lib that come with AS TCL is impossible to link with GCC which 
 	# comes with strawberry perl; Have a ticket for this; (XXX) VKON 27-06-2018
-	# but also freebsd, which have problems with stubs, currently
+	#
+	# ... also freebsd, which have problems with stubs currently
 	# http://www.cpantesters.org/cpan/report/0bb213fc-7a55-11e8-8df7-db842dc43508
+	#
+	# ... but also any other $^O which we do not have in 'tcl-core' dir
+	#
    "library=s",   \ my $libpath,
    "include=s",   \ my $incpath,
    "define=s",    \(my $defs=''),
