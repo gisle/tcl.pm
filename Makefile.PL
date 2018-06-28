@@ -44,7 +44,6 @@ sub _die ($) {
 GetOptions(
    "tclsh=s",     \(my $tclsh='tclsh'),
    "tclconfig=s", \ my $tclconfig,
-   "buildspec",   \ my $buildspec,
    "usestubs!",   \(my $usestubs = $^O eq 'MSWin32'? 0 : 1),
 	# we prefer usestubs, but on windows default is to not use them, because
 	# stubs lib that come with AS TCL is impossible to link with GCC which 
@@ -64,8 +63,6 @@ Customised usage:
  perl Makefile.PL      \
   [--tclsh <path>]     \ # Use this tclsh executable as a base to find the lib info needed
   [--tclconfig <path>] \ # Use this Tcl config file (not tclConfig.sh from the tclsh above)
-  [--buildspec]        \ # Used with --tclconfig, use the 'build' (not 'install')
-                       \ # values  for determining lib info.... THIS OPTION WILL GO AWAY 
   [--nousestubs]       \ # (do not) use the Tcl stubs mechanism
   [--library=...]      \ # Use this specific Tcl library
   [--include=...]      \ # Use this specific include path
@@ -97,7 +94,6 @@ if (defined($libpath) && defined($incpath)) {
     # even on $^O eq 'darwin'
     # When user has its own tclConfig.sh with --tclconfig=..., then we
     # overwrite values in %tclcfg
-    # but still we use workable tclsh in order to avoid bogus FAIL;
 
     open(my $fh, "$tclsh tclcfg.tcl |") or _die "error starting $tclsh: $!\n";
     my $tclcfg = join '', <$fh>;
@@ -124,24 +120,7 @@ if (defined($libpath) && defined($incpath)) {
 	# Retrieve all info based on tclConfig.sh
 	process_tclconfig($tclconfig, \%tclcfg);
 
-	# want to decide, which Tcl config var to use for linker, among:
-	# TCL_(BUILD_)?(STUB_)?LIB_SPEC
-	# this gives us 4:
-	# TCL_LIB_SPEC/TCL_BUILD_LIB_SPEC/TCL_STUB_LIB_SPEC/TCL_BUILD_STUB_LIB_SPEC
-	my $libspecvar = "TCL".($buildspec?"_BUILD":"").($usestubs ? "_STUB" : "")."_LIB_SPEC";
-=comment
-# String to pass to linker to pick up the Tcl library from its build directory.
-TCL_BUILD_LIB_SPEC=''
-# String to pass to linker to pick up the Tcl library from its installed directory.
-TCL_LIB_SPEC='C:\apps\tcl-866-as86\lib\tcl86t.lib'
-# String to pass to linker to pick up the Tcl stub library from its build directory.
-TCL_BUILD_STUB_LIB_SPEC='-L.\Release_VC13 tclstub86.lib'
-# String to pass to linker to pick up the Tcl stub library from its installed directory.
-TCL_STUB_LIB_SPEC='-LC:\apps\tcl-866-as86\lib tclstub86.lib'
-=cut
-	#WARNING: this $buildspec var IS GOING AWAY; things are about 'installed' directory
-
-	$libpath = $tclcfg{$libspecvar};
+	$libpath = $usestubs ? $tclcfg{TCL_STUB_LIB_SPEC} : $tclcfg{TCL_LIB_SPEC};
 	$incpath = $tclcfg{TCL_INCLUDE_SPEC};
 	if ($usestubs) {
 	    if ($^O eq 'MSWin32') {
