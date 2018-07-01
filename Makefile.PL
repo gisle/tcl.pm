@@ -65,9 +65,9 @@ Most common usage:
 
 Customised usage:
  perl Makefile.PL      \
+  [--nousestubs]       \ # (do not) use the Tcl stubs mechanism
   [--tclsh <path>]     \ # Use this tclsh executable as a base to find the lib info needed
   [--tclconfig <path>] \ # Use this Tcl config file (not tclConfig.sh from the tclsh above)
-  [--nousestubs]       \ # (do not) use the Tcl stubs mechanism
   [--library=...]      \ # Use this specific Tcl library
   [--include=...]      \ # Use this specific include path
   [--define=...]       \ # Use this specific set of defines
@@ -182,7 +182,6 @@ if ($^O eq 'darwin') {
     }
 }
 
-#print <<"#EOS";
 WriteMakefile(
     NAME => "Tcl",
     VERSION_FROM => 'Tcl.pm',
@@ -200,7 +199,6 @@ WriteMakefile(
     DEFINE => $defs,
     @extraargs,
 );
-#EOS
 
 sub process_tclconfig {
     # Process a tclConfig.sh file for build info

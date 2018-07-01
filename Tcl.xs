@@ -657,7 +657,7 @@ TclObjFromSv(pTHX_ SV *sv)
 		/* XXX: Is this handling refcount on NewObj right? */
 		Tcl_ListObjAppendElement(NULL, objPtr, Tcl_NewObj());
 	    } else {
-		if ((AV *) SvRV(*svp) == av) {
+		if (SvROK(*svp) && (AV *) SvRV(*svp) == av) {
 		    /* XXX: Is this a proper check for cyclical reference? */
 		    croak("cyclical array reference found");
 		    abort();
