@@ -2,8 +2,10 @@
 
 # before running this script make sure you have 'tclsh' in your path, 
 # and this 'tcl' distribution is required one.
+
 # FreeBSD users may want to modify name of tcl interpreter with --tclsh=tclsh86
 # as long as 'tclsh' does not work in their case
+#
 
 use strict;
 use Getopt::Long;
@@ -41,8 +43,20 @@ sub _die ($) {
     exit 0;
 }
 
+my $tclsh_default = 'tclsh';
+
+# for FreeBSD users, according to ticket 6086, try to guess their name for tclsh
+if ($^O eq 'freebsd' && `tclsh /dev/null 2>&1` =~ /named with a version/) {
+    for my $ver (qw(8.9 8.8 8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0)) {
+	if (`tclsh$ver /dev/null 2>&1` !~ /named with a version/) {
+	    $tclsh_default = "tclsh$ver"; # ok will use that
+	    last;
+	}
+    }
+}
+
 GetOptions(
-   "tclsh=s",     \(my $tclsh='tclsh'),
+   "tclsh=s",     \(my $tclsh=$tclsh_default),
    "tclconfig=s", \ my $tclconfig,
    "usestubs!",   \(my $usestubs = $^O =~ /^solaris|linux|hpux|darwin|cygwin|aix|freebsd|netbsd|openbsd$/? 1 : 0),
 	# we prefer usestubs, but on windows default is to not use them, because
