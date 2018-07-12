@@ -786,8 +786,8 @@ int Tcl_EvalInPerl(ClientData clientData, Tcl_Interp *interp,
     }
     else {
 	if (count != 1) {
-	    croak("Perl sub bound to Tcl proc returned %d args, expected 1",
-		    count);
+	    croak("Perl sub bound to Tcl proc returned %ld args, expected 1",
+		    (long)count);
 	}
 	sv = POPs; /* pop the undef off the stack */
 
@@ -866,8 +866,8 @@ int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
     }
     else {
 	if (count != 1) {
-	    croak("Perl sub bound to Tcl proc returned %d args, expected 1",
-		    count);
+	    croak("Perl sub bound to Tcl proc returned %ld args, expected 1",
+		    (long)count);
 	}
 	sv = POPs; /* pop the undef off the stack */
 
