@@ -1055,14 +1055,17 @@ Tcl_Eval(interp, script, flags = 0)
 	int     flags
 	SV *	interpsv = ST(0);
 	STRLEN	length = NO_INIT
-	char *cscript = NO_INIT
+	char *  cscript = NO_INIT
     PPCODE:
 	if (!initialized) { return; }
 	(void) sv_2mortal(SvREFCNT_inc(interpsv));
 	PUTBACK;
 	Tcl_ResetResult(interp);
-	/* sv_mortalcopy here prevents stringifying script - necessary ?? */
+	/* sv_mortalcopy here prevents stringifying script -
 	cscript = SvPV(sv_mortalcopy(script), length);
+        - but then we have problems when script is large,
+        case covereed with t/eval.t, NOT ok 6 */
+	cscript = SvPV(script, length);
 	if (Tcl_EvalEx(interp, cscript, length, flags) != TCL_OK) {
 	    croak("%s", Tcl_GetStringResult(interp));
 	}
