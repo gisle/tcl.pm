@@ -4,7 +4,7 @@
  *	This file contains XS code for the Perl's Tcl bridge module.
  *
  * Copyright (c) 1994-1997, Malcolm Beattie
- * Copyright (c) 2003-2004, Vadim Konovalov
+ * Copyright (c) 2003-2018, Vadim Konovalov
  * Copyright (c) 2004 ActiveState Corp., a division of Sophos PLC
  *
  */
@@ -32,6 +32,17 @@
 #include <tcl.h>
 
 #ifdef USE_TCL_STUBS
+
+/* Let Tcl_Init() stub could be pointed by a function pointer.
+ * Since tcl8.5, Tcl_Init() is defined as a macro with an argument and
+ * unable to be assigned to a function pointer. We need to redefine it back
+ * to tcl8.4 style  .
+ */
+#ifdef Tcl_Init
+#  undef  Tcl_Init
+#  define Tcl_Init  (tclStubsPtr->tcl_Init)
+#endif
+
 /*
  * If we use the Tcl stubs mechanism, this provides us Tcl version
  * and direct dll independence, but we must force the loading of
@@ -1064,7 +1075,7 @@ Tcl_Eval(interp, script, flags = 0)
 	/* sv_mortalcopy here prevents stringifying script -
 	cscript = SvPV(sv_mortalcopy(script), length);
         - but then we have problems when script is large,
-        case covereed with t/eval.t, NOT ok 6 */
+        case covered with t/eval.t, NOT ok 6 */
 	cscript = SvPV(script, length);
 	if (Tcl_EvalEx(interp, cscript, length, flags) != TCL_OK) {
 	    croak("%s", Tcl_GetStringResult(interp));
