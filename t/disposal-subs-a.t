@@ -74,18 +74,13 @@ myok(5,($ct5==5),'- ran '.$ct5.' files');
 exit;
 
 
-
+# returns name of module if 'use xxx' fails or empty string if 'use xxx' successful
 sub test_use {
- my $use=shift;
- my $useok=0;
- my $bad='';
- eval {
-    $useok =eval $use.';1';
-    unless ($useok) { $bad=$use; }
-    };
- return $bad;
+  my $use = shift;
+  my $useok = eval $use.';1';
+  if (!$useok || $@) { return $use }
+  return '';
 }
-
 
 BEGIN {
   my $use_bad='';
@@ -97,7 +92,7 @@ BEGIN {
    print "1..0 # skip because: not installed $use_bad \n";
    exit;
    };
-  }
+}
 
 
 
