@@ -144,7 +144,7 @@ if (defined($libpath) && defined($incpath)) {
 	    if ($#tclh==-1) {
 		_die "incpath $incpath from your tclconfig $tclconfig does not provide tcl.h"
 	    }
-	} else {_die "can not figure incpath out from your tclconfig $tclconfig"}
+	} else {_die "can not figure out incpath from your tclconfig $tclconfig"}
 
 	if ($usestubs) {
 	    if ($^O eq 'darwin' && $tclcfg{TCL_STUB_LIB_PATH} =~ /\.framework/ ) {
@@ -204,7 +204,7 @@ if ($^O eq 'darwin') {
     }
 }
 
-WriteMakefile(
+my $mm = WriteMakefile(
     NAME => "Tcl",
     VERSION_FROM => 'Tcl.pm',
     LICENSE => 'perl',
@@ -221,6 +221,50 @@ WriteMakefile(
     DEFINE => $defs,
     @extraargs,
 );
+if ($mm->is_make_type('dmake')) {
+    unlink('Makefile');
+    _die <<'EOS';
+dmake prohibited. It does not pass our -Isomething to compiler. Observe:
+
+given these 3 reports:
+https://www.cpantesters.org/cpan/report/4c59e4e1-6c09-1014-8479-eb9272cb0768
+https://www.cpantesters.org/cpan/report/b4cb1d89-6bf4-1014-b2e2-7896eb3704b7
+https://www.cpantesters.org/cpan/report/6abf7f68-6d61-1014-8cbe-f6af8038f308
+
+I see that they incorrectly use paths on windows
+
+all 3 have:
+
+    lddlflags='-mdll -s -L"C:\STRAWB~1\perl\lib\CORE" -L"C:\STRAWB~1\c\lib"'
+
+yet these are:
+    PERL="C:\Strawberry240\perl\bin\perl.exe"
+    PERL="C:\Strawberry261\perl\bin\perl.exe"
+    PERL="C:\Strawberry\perl\bin\perl.exe"
+
+At the same time, however current strawberry package has dmake.exe which outputs
+following message:
+
+	c:\>dmake
+	#############################################################
+	###                                                       ###
+	###                     DMAKE WARNING                     ###
+	###                                                       ###
+	###  Do not use dmake.exe utility as it is no longer      ###
+	###  part of Strawberry Perl, use gmake.exe instead!      ###
+	###                                                       ###
+	###  If you have troubles with CPAN client delete:        ###
+	###  %USERPROFILE%\AppData\Local\.cpan\CPAN\MyConfig.pm   ###
+	###                                                       ###
+	#############################################################
+
+Therefore I come to conclusion that we're dealing with modified strawberry.
+How much good is it? Or how far it is broken? IDK.
+
+d-make, good-bye!
+EOS
+}
+
 
 sub process_tclconfig {
     # Process a tclConfig.sh file for build info
@@ -257,6 +301,7 @@ BEGIN {
     );
     undef(*WriteMakefile);
     *WriteMakefile = sub {
+	print STDERR "w-m-f:[@_]\n";
         my %arg = @_;
         for (keys %mm_req) {
             unless (eval { ExtUtils::MakeMaker->VERSION($mm_req{$_}) }) {
