@@ -301,7 +301,6 @@ BEGIN {
     );
     undef(*WriteMakefile);
     *WriteMakefile = sub {
-	print STDERR "w-m-f:[@_]\n";
         my %arg = @_;
         for (keys %mm_req) {
             unless (eval { ExtUtils::MakeMaker->VERSION($mm_req{$_}) }) {
