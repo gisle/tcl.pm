@@ -221,7 +221,7 @@ my $mm = WriteMakefile(
     DEFINE => $defs,
     @extraargs,
 );
-if ($mm->is_make_type('dmake')) {
+if ($mm->is_make_type('dmake') and 0) { # Mmm. no. d-make welcome. problem is somewhere else
     unlink('Makefile');
     _die <<'EOS';
 dmake prohibited. It does not pass our -Isomething to compiler. Observe:
