@@ -111,7 +111,8 @@ if (defined($libpath) && defined($incpath)) {
     # When user has its own tclConfig.sh with --tclconfig=..., then we
     # overwrite values in %tclcfg
 
-    open(my $fh, "$tclsh tclcfg.tcl |") or _die "error starting $tclsh: $!\n";
+    open(my $fh, "$tclsh tclcfg.tcl |");
+    _die "error starting $tclsh: $!\n" if $?!=0;
     my $tclcfg = join '', <$fh>;
     print $tclcfg;
     my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)$/gm;
