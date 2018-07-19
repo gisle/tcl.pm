@@ -64,6 +64,7 @@ GetOptions(
    "include=s",   \ my $incpath,
    "define=s",    \(my $defs=''),
    "hack1!",      \(my $hack1=1),
+   "hack2!",      \(my $hack2=1),
    "help!",       \ my $help,   
 ) || usage();
 usage() if $help;
@@ -80,7 +81,7 @@ Customised usage:
   [--library=...]      \ # Use this specific Tcl library
   [--include=...]      \ # Use this specific include path
   [--define=...]       \ # Use this specific set of defines
-  [--nohack1]          \ # internal usage, please RTFS
+  [--nohack1]          \ # internal usage, please RTFS word 'hack1'
   [--help]             \ # --help
   [<makemaker opts>]     # e.g. LINKTYPE=STATIC
 
@@ -136,8 +137,10 @@ if (defined($libpath) && defined($incpath)) {
 	# Retrieve all info based on tclConfig.sh
 	process_tclconfig($tclconfig, \%tclcfg);
 
-	if ($hack1 and q{HAAACK1: on $^O eq 'MSWin32' activetcl 866 stub library could not be linked to with gcc
-	     which comes with strawberry; 860 is good.
+	if ($hack1 and q{
+	    HACK1: on $^O eq 'MSWin32' activetcl 866 stub library could not be linked
+	           with gcc which comes with strawberry;
+		   860 is good.
 	     }) { # hopefully this will be:  if (0 and q{....})
 	    if ($usestubs and $^O eq 'MSWin32') {
 	        $stub = "tclstub84"; # use our stub, not their
@@ -234,47 +237,10 @@ my $mm = WriteMakefile(
     DEFINE => $defs,
     @extraargs,
 );
-if ($mm->is_make_type('dmake') and 0) { # Mmm. no. d-make welcome. problem is somewhere else
+if ($mm->is_make_type('dmake') and 0) { # Mmm. no. d-make welcome. problem was somewhere else
     unlink('Makefile');
     _die <<'EOS';
-dmake prohibited. It does not pass our -Isomething to compiler. Observe:
-
-given these 3 reports:
-https://www.cpantesters.org/cpan/report/4c59e4e1-6c09-1014-8479-eb9272cb0768
-https://www.cpantesters.org/cpan/report/b4cb1d89-6bf4-1014-b2e2-7896eb3704b7
-https://www.cpantesters.org/cpan/report/6abf7f68-6d61-1014-8cbe-f6af8038f308
-
-I see that they incorrectly use paths on windows
-
-all 3 have:
-
-    lddlflags='-mdll -s -L"C:\STRAWB~1\perl\lib\CORE" -L"C:\STRAWB~1\c\lib"'
-
-yet these are:
-    PERL="C:\Strawberry240\perl\bin\perl.exe"
-    PERL="C:\Strawberry261\perl\bin\perl.exe"
-    PERL="C:\Strawberry\perl\bin\perl.exe"
-
-At the same time, however current strawberry package has dmake.exe which outputs
-following message:
-
-	c:\>dmake
-	#############################################################
-	###                                                       ###
-	###                     DMAKE WARNING                     ###
-	###                                                       ###
-	###  Do not use dmake.exe utility as it is no longer      ###
-	###  part of Strawberry Perl, use gmake.exe instead!      ###
-	###                                                       ###
-	###  If you have troubles with CPAN client delete:        ###
-	###  %USERPROFILE%\AppData\Local\.cpan\CPAN\MyConfig.pm   ###
-	###                                                       ###
-	#############################################################
-
-Therefore I come to conclusion that we're dealing with modified strawberry.
-How much good is it? Or how far it is broken? IDK.
-
-d-make, good-bye!
+dmake prohibited. It does bla-bla-bla
 EOS
 }
 
