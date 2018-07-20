@@ -398,7 +398,7 @@ If there are still other "users" of the TCLNAME then it is not deleted untill th
 If another call with the same CODEREF happens before this,
 then it will get registered as a "user" without any need to delete/recreate the tcl command first.
 
-= item 2)
+=item 2)
 
 otherwise a DESCRNAME is created with the text sections of the command, prefaced by "=".
 Like
