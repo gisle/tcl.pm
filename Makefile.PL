@@ -112,6 +112,7 @@ if (defined($libpath) && defined($incpath)) {
     # overwrite values in %tclcfg
 
     open(my $fh, "$tclsh tclcfg.tcl |") or _die "error starting $tclsh: $!";
+    $?=0;
     _die "error starting $tclsh: \$?=$?; \$!=$!\n" if $?!=0;
     my $tclcfg = join '', <$fh>;
     print $tclcfg;

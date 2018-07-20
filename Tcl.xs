@@ -278,18 +278,19 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	}
 	if (!handle) {
 	    /* Try different versions anywhere in the path. */
-	    warn("failed dlopen(%s,...);", libname);
+	    char buffer[512]; /* DELETE this after things are settled TODO */
+	    sprintf(buffer,"failed dlopen(%s,...);\n", libname);
 	    char *pos = strstr(libname, "tcl8")+4;
 	    if (*pos == '.') {
 		pos++;
 	    }
 	    *pos = '9'; /* count down from '9' to '0': 8.9, 8.8, 8.7, 8.6, ... */
 	    do {
-		warn("trying dlopen(%s,...);", libname);
+		sprintf(buffer,"%strying dlopen(%s,...)\n", buffer, libname);
 		handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
 	    } while (!handle && (--*pos >= '0'));
 	    if (!handle) {
-		warn("failed all posible tcl vers 8.x from 9 down to 0");
+		warn("%sfailed all posible tcl vers 8.x from 9 down to 0", buffer);
 		return TCL_ERROR;
 	    }
 	}
