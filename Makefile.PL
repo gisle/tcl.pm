@@ -167,12 +167,12 @@ if (defined($libpath) && defined($incpath)) {
 	if ($usestubs) {
 	    if ($^O eq 'darwin' && $tclcfg{TCL_STUB_LIB_PATH} =~ /\.framework/ ) {
 		(my $fmk = $tclcfg{TCL_STUB_LIB_PATH}) =~ s/(?<=\.framework).*//;
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"";
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"".quotemeta($fmk)."\\\"";
 		@extraargs = (dynamic_lib => {OTHERLDFLAGS => "-framework Carbon"});
 	    } else {
 		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}/lib\\\"";
 	    }
-	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\"";
+	    $defs .= " -DTCL_LIB_FILE=\\\"".quotemeta($tclcfg{TCL_LIB_FILE})."\\\"";
 	}
     } else {
 	# no --tclconfig=... -> get values from ./tclcfg.tcl
@@ -263,6 +263,7 @@ sub process_tclconfig {
 	$hashref->{$k} =~ s{/cygdrive/(\w)/}{$1:/}ig;
     }
     $hashref->{tcl_version} = $hashref->{TCL_VERSION};
+    $hashref->{TCL_EXEC_PREFIX}=~y{\\}{/}; # hack for MSWin32; yet we don't go through \->\\ forest;
 }
 
 sub MY::libscan {

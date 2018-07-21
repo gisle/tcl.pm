@@ -268,18 +268,19 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    return TCL_ERROR;
 	}
 
+	char buffer[512]; buffer[0]=0; /* DELETE this after things are settled TODO */
 	/* Try based on full path. */
 	snprintf(libname, MAX_PATH-1, "%s/%s", defaultLibraryDir, TCL_LIB_FILE);
 	handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
 	if (!handle) {
+	    sprintf(buffer,"failed dlopen(%s,...);\n", libname);
 	    /* Try based on anywhere in the path. */
 	    strcpy(libname, TCL_LIB_FILE);
 	    handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
 	}
 	if (!handle) {
 	    /* Try different versions anywhere in the path. */
-	    char buffer[512]; /* DELETE this after things are settled TODO */
-	    sprintf(buffer,"failed dlopen(%s,...);\n", libname);
+	    sprintf(buffer,"%sfailed dlopen(%s,...);\n", buffer, libname);
 	    char *pos = strstr(libname, "tcl8")+4;
 	    if (*pos == '.') {
 		pos++;
@@ -291,6 +292,7 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    } while (!handle && (--*pos >= '0'));
 	    if (!handle) {
 		warn("%sfailed all posible tcl vers 8.x from 9 down to 0", buffer);
+		printf(">%sfailed all posible tcl vers 8.x from 9 down to 0", buffer);
 		return TCL_ERROR;
 	    }
 	}
