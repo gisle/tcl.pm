@@ -292,7 +292,6 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    } while (!handle && (--*pos >= '0'));
 	    if (!handle) {
 		warn("%sfailed all posible tcl vers 8.x from 9 down to 0", buffer);
-		printf(">%sfailed all posible tcl vers 8.x from 9 down to 0", buffer);
 		return TCL_ERROR;
 	    }
 	}
