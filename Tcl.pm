@@ -297,11 +297,11 @@ This means no automatic cleanup will occur on the sub{...} or $sub
 
 
 And after the destroy inside Tcl any triggering writable on $fileref will fail as well.
-so it shhould be replaced first via
+so it should be replaced first via
   $interp->call('FILEEVENT',$fileref,WRITABLE=>'');
 
 =item (CODEREF) = Tcl::_code_dispose(NAME)
-
+	
 Purges the internal table of a NAME
 and may initiate destruction of something created thru call or create_tcl_sub
 
@@ -315,7 +315,7 @@ only when the last usage is purged does the entry get purged from the command ta
 While the internal tracking structure saves the INTERP the code was added to,
 it itself does not keep things separated by INTERP,
 A TCLNAME or DESCRNAMe can only exist in one INTERP at a time,
-using a new INTERP just causes the one in the last INTERP to disapear,
+using a new INTERP just causes the one in the last INTERP to disappear,
 and probably end up with the Tcl code getting deleted
 
 Returns (CODEREF), this is the original coderef
