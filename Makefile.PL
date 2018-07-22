@@ -118,13 +118,14 @@ if (defined($libpath) && defined($incpath)) {
     print $tclcfg;
     my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)$/gm;
 
+    $defs .= " -DTCLSH_PATH=\\\"".([$tclcfg{tclsh}=~/^(.*)\//]->[0])."\\\""; #haack
+
     if ($^O eq 'darwin' && !defined($tclconfig)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
     if ($^O eq 'MSWin32' && !defined($tclconfig) && (1 or !$usestubs)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
-
 
     if (!defined($tclconfig) && $arch && $usestubs) {
 	$incpath = "-Itcl-core/include";

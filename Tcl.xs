@@ -210,6 +210,7 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 {
     char *dl_path, libname[MAX_PATH];
     HMODULE handle = (HMODULE) NULL;
+    char buffer[1024]; buffer[0]=0; /* DELETE this after things are settled TODO */
 
     /*
      * Try a user-supplied Tcl dll to start with.
@@ -268,12 +269,19 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    return TCL_ERROR;
 	}
 
-	char buffer[512]; buffer[0]=0; /* DELETE this after things are settled TODO */
-	/* Try based on full path. */
-	snprintf(libname, MAX_PATH-1, "%s/%s", defaultLibraryDir, TCL_LIB_FILE);
-	handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+#if definde(__WIN32__) && defined(TCLSH_PATH)
 	if (!handle) {
-	    sprintf(buffer,"failed dlopen(%s,...);\n", libname);
+	    snprintf(libname, MAX_PATH-1, "%s/%s", TCLSH_PATH, TCL_LIB_FILE);
+	    handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+	}
+#endif
+	if (!handle) {
+	    /* Try based on full path. */
+	    snprintf(libname, MAX_PATH-1, "%s/%s", defaultLibraryDir, TCL_LIB_FILE);
+	    handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+	}
+	if (!handle) {
+	    sprintf(buffer,"%sfailed dlopen(%s,...);\n", buffer, libname);
 	    /* Try based on anywhere in the path. */
 	    strcpy(libname, TCL_LIB_FILE);
 	    handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
