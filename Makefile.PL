@@ -170,7 +170,7 @@ if (defined($libpath) && defined($incpath)) {
 		$defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"";
 		@extraargs = (dynamic_lib => {OTHERLDFLAGS => "-framework Carbon"});
 	    } else {
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}/lib\\\"";
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}/".($^O eq 'MSWin32'?'bin':'lib')."\\\"";
 	    }
 	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\"";
 	}
@@ -245,7 +245,6 @@ if ($mm->is_make_type('dmake') and 0) { # Mmm. no. d-make welcome. problem was s
 dmake prohibited. It does bla-bla-bla
 EOS
 }
-
 
 sub process_tclconfig {
     # Process a tclConfig.sh file for build info
