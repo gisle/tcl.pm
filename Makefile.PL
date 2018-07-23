@@ -171,7 +171,7 @@ if (defined($libpath) && defined($incpath)) {
 		$defs .= " -DLIB_RUNTIME_DIR=\\\"$fmk\\\"";
 		@extraargs = (dynamic_lib => {OTHERLDFLAGS => "-framework Carbon"});
 	    } else {
-		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}/".($^O eq 'MSWin32'?'bin':'lib')."\\\"";
+		$defs .= " -DLIB_RUNTIME_DIR=\\\"$tclcfg{TCL_EXEC_PREFIX}".($^O eq 'MSWin32'?'':'/lib')."\\\"";
 	    }
 	    $defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\"";
 	}

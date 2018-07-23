@@ -276,6 +276,7 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	}
 #endif
 	if (!handle) {
+	    sprintf(buffer,"%sfailed dlopen(%s,...);\n", buffer, libname);
 	    /* Try based on full path. */
 	    snprintf(libname, MAX_PATH-1, "%s/%s", defaultLibraryDir, TCL_LIB_FILE);
 	    handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
