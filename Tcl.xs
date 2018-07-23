@@ -269,7 +269,7 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    return TCL_ERROR;
 	}
 
-#if definde(__WIN32__) && defined(TCLSH_PATH)
+#if defined(__WIN32__) && defined(TCLSH_PATH)
 	if (!handle) {
 	    snprintf(libname, MAX_PATH-1, "%s/%s", TCLSH_PATH, TCL_LIB_FILE);
 	    handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
