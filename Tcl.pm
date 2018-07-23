@@ -381,7 +381,7 @@ The optional argument FLAGS behaves as in I<SetVar> above.
 
 In V1.03 command table cleanup was intoduced.
 This tries to keep the internal structure and command table clean.
-In V1.02 and prior heavy use of sub { .. } in Tcl commands could polute these tables
+In V1.02 and prior heavy use of sub { .. } in Tcl commands could pollute these tables
 as they were never cleared. Command table cleanup tries to alieviate this.
 
 if you call create_tcl_sub the internal reference exists until
@@ -394,7 +394,7 @@ if the internal reference was created internaly by call(...) there are two rules
 =item 1)
 
 If the command is an "after" the internal references is keept at least until 1 second after the delay.
-If there are still other "users" of the TCLNAME then it is not deleted untill the last one goes away.
+If there are still other "users" of the TCLNAME then it is not deleted until the last one goes away.
 If another call with the same CODEREF happens before this,
 then it will get registered as a "user" without any need to delete/recreate the tcl command first.
 
@@ -409,7 +409,7 @@ or "=gets sock9ac2b50"
 or "=fileevent sock9827430 writable"
 
 
-the TCLCODES created for that command will be kept at least untill a command with
+the TCLCODES created for that command will be kept at least until a command with
 the same DESCRNAME and containing a subroutine reference is run again.
 Since many DESCRNAMES can reference the same TCLNAME only when
 the last DESCRNAME referencing a TCLNAME is released is the TCLNAME purged.
@@ -436,7 +436,7 @@ set them to non-blank or non-zero to add the tracking output to SYSOUT
 =item $Tcl::TRACE_SHOWCODE
 
 Display all generated Tcl code by call().
-Be aware: Tkx::MainLoop runs by issueing a lot of "winfo exists ." calls, a LOT.
+Be aware: Tkx::MainLoop runs by issuing a lot of "winfo exists ." calls, a LOT.
 But this is a nice way to tell what your programs are doing to Tcl.
 
 
