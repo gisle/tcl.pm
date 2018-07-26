@@ -230,8 +230,13 @@ my $mm = WriteMakefile(
     MIN_PERL_VERSION => '5.006',
     ABSTRACT_FROM => 'Tcl.pm',
     META_MERGE => {
+        "meta-spec" => { version => 2 },
         resources => {
-            repository => 'http://github.com/gisle/tcl.pm',
+            repository => {
+                type => 'git',
+                web => 'https://github.com/gisle/tcl.pm',
+                url => 'https://github.com/gisle/tcl.pm.git',
+            },
             MailingList => 'mailto:tcltk@perl.org',
         }
     },
