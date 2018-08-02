@@ -1,6 +1,6 @@
 package Tcl;
 
-$Tcl::VERSION = '1.25';
+$Tcl::VERSION = '1.26';
 
 =head1 NAME
 
@@ -595,8 +595,10 @@ sub new {
     return $int;
 }
 
+my $pid = $$; # see rt ticket 77522
 END {
-    Tcl::_Finalize();
+    Tcl::_Finalize()
+        if $$ == $pid;
 }
 
 # %anon_refs keeps track of anonymous subroutines and scalar/array/hash
