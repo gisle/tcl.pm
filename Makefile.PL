@@ -1,4 +1,3 @@
-#!perl -w
 # before running this script make sure you have 'tclsh' in your path, 
 # and this 'tcl' distribution is required one.
 
