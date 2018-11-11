@@ -52,7 +52,7 @@ if ($^O eq 'freebsd') {
 GetOptions(
    "tclsh=s",     \(my $tclsh=$tclsh_default),
    "tclconfig=s", \ my $tclconfig,
-   "usestubs!",   \(my $usestubs = $^O =~ /^MSWin32|solaris|linux|hpux|darwin|cygwin|aix|freebsd|netbsd|openbsd$/? 1 : 0),
+   "usestubs!",   \(my $usestubs = $^O =~ m/^MSWin32|solaris|linux|hpux|darwin|cygwin|aix|freebsd|netbsd|openbsd$/? 1 : 0),
 	# we prefer usestubs, but on windows default is to not use them, because
 	# stubs lib that come with AS TCL is impossible to link with GCC which 
 	# comes with strawberry perl; Have a ticket for this; (XXX) VKON 27-06-2018
@@ -116,7 +116,7 @@ if (defined($libpath) && defined($incpath)) {
 
     my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)$/gm;
 
-    $defs .= " -DTCLSH_PATH=\\\"".([$tclcfg{tclsh}=~/^(.*)\//]->[0])."\\\""; #haack
+    $defs .= " -DTCLSH_PATH=\\\"".([$tclcfg{tclsh}=~m/^(.*)\//]->[0])."\\\""; #haack
 
     if ($^O eq 'darwin' && !defined($tclconfig)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
@@ -266,7 +266,7 @@ sub process_tclconfig {
 	$hashref->{$k} =~ s{/cygdrive/(\w)/}{$1:/}ig;
     }
     $hashref->{tcl_version} = $hashref->{TCL_VERSION};
-    $hashref->{TCL_EXEC_PREFIX}=~y{\\}{/}; # hack for MSWin32; yet we don't go through \->\\ forest;
+    $hashref->{TCL_EXEC_PREFIX}=~y[\\][/]; # hack for MSWin32; yet we don't go through \->\\ forest;
 }
 
 sub MY::libscan {
