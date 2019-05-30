@@ -80,7 +80,7 @@ static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
 #include <windows.h>
 #undef WIN32_LEAN_AND_MEAN
 #define dlopen(libname, flags)	LoadLibrary(libname)
-#define dlclose(path)		((void *) FreeLibrary((HMODULE) path))
+#define dlclose(path)		FreeLibrary((HMODULE) path)
 #define DLSYM(handle, symbol, type, proc) \
 	(proc = (type) GetProcAddress((HINSTANCE) handle, symbol))
 #define snprintf _snprintf
