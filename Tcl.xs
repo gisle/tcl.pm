@@ -1012,6 +1012,8 @@ var_trace(ClientData clientData, Tcl_Interp *interp,
 
 MODULE = Tcl	PACKAGE = Tcl	PREFIX = Tcl_
 
+PROTOTYPES: DISABLE
+
 SV *
 Tcl__new(class = "Tcl")
 	char *	class
@@ -1709,6 +1711,8 @@ Tcl_UnsetVar2(interp, varname1, varname2, flags = 0)
 
 MODULE = Tcl		PACKAGE = Tcl::List
 
+PROTOTYPES: DISABLE
+
 SV*
 as_string(SV* sv,...)
     PREINIT:
@@ -1730,6 +1734,8 @@ as_string(SV* sv,...)
 
 
 MODULE = Tcl		PACKAGE = Tcl::Var
+
+PROTOTYPES: DISABLE
 
 SV *
 FETCH(av, key = NULL)
@@ -1808,6 +1814,8 @@ STORE(av, sv1, sv2 = NULL)
 	}
 
 MODULE = Tcl	PACKAGE = Tcl
+
+PROTOTYPES: DISABLE
 
 BOOT:
     {
