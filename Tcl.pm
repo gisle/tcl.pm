@@ -185,7 +185,7 @@ spaces embedded in any ARG will not cause it to be split into two Tcl
 arguments before being passed to PROC.  This differs from icall/call in
 that it directly invokes the command name without allowing for command
 tracing or making use of Tcl's unknown (AUTOLOAD) mechanism.  If the
-command does not already exist in the interpreter, and error will be
+command does not already exist in the interpreter, an error will be
 thrown.
 
 Arguments are converted efficiently from Perl SVs to Tcl_Objs.  A Perl AV
