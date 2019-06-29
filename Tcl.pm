@@ -379,10 +379,10 @@ The optional argument FLAGS behaves as in I<SetVar> above.
 
 =head2 Command table cleanup
 
-In V1.03 command table cleanup was intoduced.
+In V1.03 command table cleanup was introduced.
 This tries to keep the internal structure and command table clean.
 In V1.02 and prior heavy use of sub { .. } in Tcl commands could pollute these tables
-as they were never cleared. Command table cleanup tries to alieviate this.
+as they were never cleared. Command table cleanup tries to alleviate this.
 
 if you call create_tcl_sub the internal reference exists until
 you delete_ref or _code_dispose it, or you call create_tcl_sub with the same DESCRNAME.
