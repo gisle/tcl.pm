@@ -1558,7 +1558,7 @@ Tcl_CreateCommand(interp,cmdName,cmdProc,clientData=&PL_sv_undef,deleteProc=&PL_
     CODE:
 	if (!initialized) { return; }
 	if (SvIOK(cmdProc))
-	    Tcl_CreateCommand(interp, cmdName, (Tcl_CmdProc *) SvIV(cmdProc),
+	    Tcl_CreateCommand(interp, cmdName, INT2PTR(Tcl_CmdProc *, SvIV(cmdProc)),
 			      INT2PTR(ClientData, SvIV(clientData)), NULL);
 	else {
 	    AV *av = (AV *) SvREFCNT_inc((SV *) newAV());
