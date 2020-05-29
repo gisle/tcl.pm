@@ -10,13 +10,13 @@ as they were never cleared. Command table cleanup tries to alleviate this.
 if you call create_tcl_sub the internal reference exists until
 you delete_ref or _code_dispose it, or you call create_tcl_sub with the same DESCRNAME.
 
-if the internal reference was created internaly by call(...) there are two rules
+if the internal reference was created internally by call(...) there are two rules
 
 =over
 
 =item 1)
 
-If the command is an "after" the internal references is kept at least until 1 second after the delay.
+If the command is an "after" the internal references are kept at least until 1 second after the delay.
 If there are still other "users" of the TCLNAME then it is not deleted until the last one goes away.
 If another call with the same CODEREF happens before this,
 then it will get registered as a "user" without any need to delete/recreate the tcl command first.
@@ -51,7 +51,7 @@ a refcount was kept at the PVCV that prevented it from getting garbage collected
 but that SV itself got "lost" and could never be garbage collected,
 thereby also keeping anything in that codes PAD.
 
-To assist in tracking chages to the internal table and the commands table 3 trace subs were added,
+To assist in tracking changes to the internal table and the commands table 3 trace subs were added,
 set them to non-blank or non-zero to add the tracking output to SYSOUT, like this in your code:
 
     sub Tcl::TRACE_SHOWCODE(){1}
@@ -83,7 +83,7 @@ itself, users should skip this section.
 In order to create Tcl/Tk application with this module, you need to make
 sure that Tcl/Tk is available within visibility of this module. There are
 many ways to achieve this, varying on ease of starting things up and
-providing flexible moveable archived files.
+providing flexible movable archived files.
 
 Following list enumerates them, in order of increased possibility to change
 location.

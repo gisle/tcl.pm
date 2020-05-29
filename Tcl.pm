@@ -99,7 +99,7 @@ Tcl::EVAL_GLOBAL or Tcl::EVAL_DIRECT.
 
 =item $interp->GlobalEval (STRING)
 
-REMOVED.  Evalulate script STRING at global level.
+REMOVED.  Evaluate script STRING at global level.
 Call I<Eval>(STRING, Tcl::EVAL_GLOBAL) instead.
 
 =item $interp->EvalFile (FILENAME)
@@ -249,10 +249,10 @@ registered commands.
 Creates a COMMAND called TCLNAME calling CODEREF in the interpreter $interp,
 and adds it to the internal tracking structure.
 DESCRNAME and TCLNAME should not begin
-with =
-or @
-or ::perl::
-to avoid colisions
+with C<=>
+or C<@>
+or C<::perl::>
+to avoid collisions.
 If TCLNAME IS blank or undef, it is constructed from the CODEREF address.
 GENCODE starts as TCLNAME but gets @$EVENTS which can contain %vars joined to it.
 
@@ -286,7 +286,7 @@ although
 
   $interp->call('FILEEVENT',$fileref,WRITABLE=>$sub);
 
-will stil work fine too.
+will still work fine, too.
 
 Then you later call
 
@@ -307,8 +307,8 @@ and may initiate destruction of something created thru call or create_tcl_sub
 
 TCLNAME and DESCRNAME get stored in an internal structure,
 and can be used to purge things form the command table.
-calling _code_dispose on a TCLNAME retruned from create_tcl_sub removes all use instances and purges the command table.
-calling _code_dispose on a DESCRNAME passed to create_tcl_sub removes only that instace
+calling _code_dispose on a TCLNAME returned from create_tcl_sub removes all use instances and purges the command table.
+calling _code_dispose on a DESCRNAME passed to create_tcl_sub removes only that instance
 Code used in a DESCRNAME may be used in other places as well,
 only when the last usage is purged does the entry get purged from the command table
 
@@ -503,7 +503,7 @@ sub _anon_refs_cheat { return \%anon_refs;}
 #       where [0] $sub is the perlcoderef,
 #             [1] $interp is the tcl interpreter it is in,
 #             [2] $tclname is the name for the coderef in tcl
-#             [3] is the number of Tcl::Code elemets that reference it.
+#             [3] is the number of Tcl::Code elements that reference it.
 #     The second element [1] is a hash
 #      for each Tcl::Code $descrname there is a $descrname key here,
 #        the value at the key is the number of Tcl::Code of that $descrname pointing to this Tcl::Cmdbase
@@ -717,7 +717,7 @@ sub showcode{
 # Returns tcl script suitable for using in tcl events.
 sub create_tcl_sub {
     my ($interp,$sub,$events,$tclname, $descrname) = @_;
-    # rnames and tclnames begining = or @ or ::perl:: are reserved for internal use
+    # rnames and tclnames beginning = or @ or ::perl:: are reserved for internal use
     unless ($tclname) {
 	# stringify sub, becomes "CODE(0x######)" in ::perl namespace
 	$tclname = "::perl::$sub";
@@ -852,7 +852,7 @@ package Tcl::Code;
 # to do cleaning up
 
 sub DESTROY {
-#    my $rsub    = $_[0]->[0]; # dont really need it here anymore,
+#    my $rsub    = $_[0]->[0]; # don't really need it here anymore,
 #    my $interp  = $_[0]->[1];
 
     my $tclname     = $_[0]->[2];
