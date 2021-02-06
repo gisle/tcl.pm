@@ -257,7 +257,7 @@ If TCLNAME IS blank or undef, it is constructed from the CODEREF address.
 GENCODE starts as TCLNAME but gets @$EVENTS which can contain %vars joined to it.
 
 TCLNAME and DESCRNAME get stored in an internal structure,
-and can be used to purge things fRom the command table via code_destroy or $interp->delete_ref;
+and can be used to purge things from the command table via code_destroy or $interp->delete_ref;
 
 Returns (TCLNAME,GENCODE).
 if you are creating code refs with this you can continue to use the same coderef and it will be converted on each call.
