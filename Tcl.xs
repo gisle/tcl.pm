@@ -663,7 +663,10 @@ TclObjFromSv(pTHX_ SV *sv)
     if (SvGMAGICAL(sv))
 	mg_get(sv);
 
-    if (SvROK(sv) && SvTYPE(SvRV(sv)) == SVt_PVAV &&
+    if (!SvOK(sv)) {
+	objPtr = Tcl_NewObj();
+    }
+    else if (SvROK(sv) && SvTYPE(SvRV(sv)) == SVt_PVAV &&
 	(!SvOBJECT(SvRV(sv)) || sv_isa(sv, "Tcl::List")))
     {
 	/*
