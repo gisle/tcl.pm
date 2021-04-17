@@ -886,7 +886,7 @@ sub DESTROY {
     return unless ($tclname);
     if (defined $interp) {
       $interp->DeleteCommand($tclname);
-      print "TCL::TRACE_DELETECOMMAND: $interp -> ( $tclname )\n" if TRACE_DELETECOMMAND();
+      print "TCL::TRACE_DELETECOMMAND: $interp -> ( $tclname )\n" if Tcl::TRACE_DELETECOMMAND();
     }
 }
 
