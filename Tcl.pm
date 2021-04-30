@@ -935,12 +935,11 @@ sub NEXTKEY {
 sub _nextElement {
     my $obj = shift;
     my ($interp, $varname, $flags) = @$obj;
-    my $r = $interp->invoke("array","nextelement",$varname,$arraystates{$varname});
-    if ($r eq '') {
+    unless ($interp->invoke('array','anymore',$varname,$arraystates{$varname})) {
 	delete $arraystates{$varname};
 	return undef;
     }
-    return $r;
+    return $interp->invoke('array','nextelement',$varname,$arraystates{$varname});
 }
 sub CLEAR {
     my $obj = shift;

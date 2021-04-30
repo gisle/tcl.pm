@@ -15,6 +15,7 @@ t/subclass.t		See if we can subclass Tcl
 t/trace.t		See if variable tarcing works
 t/unicode.t		some unicode tests
 t/var.t			See if access to/from Tcl variables works
+t/var2.t
 t/export_to_tcl.t	test convenience sub export_to_tcl
 t/disposal-subs.t	check if code refs destroyed and removed from tcl
 t/disposal-subs-a.t
