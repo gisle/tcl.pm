@@ -924,17 +924,16 @@ sub FIRSTKEY {
 	unless @{$obj} == 2 || @{$obj} == 3;
     my ($interp, $varname, $flags) = @$obj;
     $arraystates{$varname} = $interp->invoke("array","startsearch",$varname);
-    my $r = $interp->invoke("array","nextelement",$varname,$arraystates{$varname});
-    if ($r eq '') {
-	delete $arraystates{$varname};
-	return undef;
-    }
-    return $r;
+    return $obj->_nextElement(@_);
 }
 sub NEXTKEY {
     my $obj = shift;
     die "STORE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)"
 	unless @{$obj} == 2 || @{$obj} == 3;
+    return $obj->_nextElement(@_);
+}
+sub _nextElement {
+    my $obj = shift;
     my ($interp, $varname, $flags) = @$obj;
     my $r = $interp->invoke("array","nextelement",$varname,$arraystates{$varname});
     if ($r eq '') {
