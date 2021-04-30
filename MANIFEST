@@ -12,7 +12,7 @@ t/eval.t		See if Eval-ish things work
 t/info.t	        See if Tcl info command works
 t/result.t		See if Tcl result protocol works
 t/subclass.t		See if we can subclass Tcl
-t/trace.t		See if variable tarcing works
+t/trace.t		See if variable tracing works
 t/unicode.t		some unicode tests
 t/var.t			See if access to/from Tcl variables works
 t/export_to_tcl.t	test convenience sub export_to_tcl
