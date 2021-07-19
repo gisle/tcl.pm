@@ -395,7 +395,7 @@ NpInitialize(pTHX_ SV *X)
     static void (* findExecutable)(char *) = NULL;
     /*
      * We want the Tcl_InitStubs func static to ourselves - before Tcl
-     * is loaded dyanmically and possibly changes it.
+     * is loaded dynamically and possibly changes it.
      * Variable initstubs have to be declared as volatile to prevent
      * compiler optimizing it out.
      */
