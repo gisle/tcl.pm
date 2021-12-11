@@ -165,13 +165,13 @@ extern Tcl_PackageInitProc Blt_Init, Blt_SafeInit;
  * These may not exist - guard against NULL result.
  */
 
-static Tcl_ObjType *tclBooleanTypePtr = NULL;
-static Tcl_ObjType *tclByteArrayTypePtr = NULL;
-static Tcl_ObjType *tclDoubleTypePtr = NULL;
-static Tcl_ObjType *tclIntTypePtr = NULL;
-static Tcl_ObjType *tclListTypePtr = NULL;
-static Tcl_ObjType *tclStringTypePtr = NULL;
-static Tcl_ObjType *tclWideIntTypePtr = NULL;
+static const Tcl_ObjType *tclBooleanTypePtr = NULL;
+static const Tcl_ObjType *tclByteArrayTypePtr = NULL;
+static const Tcl_ObjType *tclDoubleTypePtr = NULL;
+static const Tcl_ObjType *tclIntTypePtr = NULL;
+static const Tcl_ObjType *tclListTypePtr = NULL;
+static const Tcl_ObjType *tclStringTypePtr = NULL;
+static const Tcl_ObjType *tclWideIntTypePtr = NULL;
 
 /*
  * This tells us whether Tcl is in a "callable" state.  Set to 1 in BOOT
