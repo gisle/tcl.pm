@@ -1409,7 +1409,7 @@ Tcl_DESTROY(interp)
 	     * Remove from the global hash of live interps.
 	     */
 	    if (hvInterps) {
-		(void) hv_delete(hvInterps, (const char *) interp,
+		(void) hv_delete(hvInterps, (const char *) &interp,
 			sizeof(Tcl), G_DISCARD);
 	    }
 	}
