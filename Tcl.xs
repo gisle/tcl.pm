@@ -19,11 +19,6 @@
 #endif
 
 /*
- * Until we update for 8.4 CONST-ness
- */
-#define USE_NON_CONST
-
-/*
  * Both Perl and Tcl use these macros
  */
 #undef STRINGIFY
@@ -399,7 +394,7 @@ NpInitialize(pTHX_ SV *X)
      * Variable initstubs have to be declared as volatile to prevent
      * compiler optimizing it out.
      */
-    static CONST char *(*volatile initstubs)(Tcl_Interp *, CONST char *, int)
+    static const char *(*volatile initstubs)(Tcl_Interp *, const char *, int)
 	= Tcl_InitStubs;
     char dllFilename[MAX_PATH];
     dllFilename[0] = '\0';
@@ -495,7 +490,7 @@ NpInitialize(pTHX_ SV *X)
 	}
     }
     if (tclKit_AppInit(g_Interp) != TCL_OK) {
-	CONST84 char *msg = Tcl_GetVar(g_Interp, "errorInfo", TCL_GLOBAL_ONLY);
+	const char *msg = Tcl_GetVar(g_Interp, "errorInfo", TCL_GLOBAL_ONLY);
 	warn("Failed to initialize Tcl with %s:\n%s",
 		(tclKit_AppInit == Tcl_Init) ? "Tcl_Init" : "TclKit_AppInit",
 		msg);
@@ -532,9 +527,9 @@ check_refcounts(Tcl_Obj *objPtr) {
 #endif
 
 static int
-has_highbit(CONST char *s, int len)
+has_highbit(const char *s, int len)
 {
-    CONST char *e = s + len;
+    const char *e = s + len;
     while (s < e) {
 	if (*s++ & 0x80)
 	    return 1;
@@ -783,7 +778,7 @@ TclObjFromSv(pTHX_ SV *sv)
 }
 
 int Tcl_EvalInPerl(ClientData clientData, Tcl_Interp *interp,
-	int objc, Tcl_Obj *CONST objv[])
+	int objc, Tcl_Obj *const objv[])
 {
     dTHX; /* fetch context */
     dSP;
@@ -840,7 +835,7 @@ int Tcl_EvalInPerl(ClientData clientData, Tcl_Interp *interp,
 }
 
 int Tcl_PerlCallWrapper(ClientData clientData, Tcl_Interp *interp,
-	int objc, Tcl_Obj *CONST objv[])
+	int objc, Tcl_Obj *const objv[])
 {
     dTHX; /* fetch context */
     dSP;
@@ -1208,7 +1203,7 @@ Tcl_invoke(interp, sv, ...)
 #define NUM_OBJS 16
 	    Tcl_Obj     *baseobjv[NUM_OBJS];
 	    Tcl_Obj    **objv = baseobjv;
-	    char        *cmdName;
+	    const char  *cmdName;
 	    int          objc, i, result;
 	    STRLEN       length;
 	    Tcl_CmdInfo	 cmdinfo;
@@ -1275,11 +1270,11 @@ Tcl_invoke(interp, sv, ...)
 		 * prepare string arguments into argv (1st is already done)
 		 * and call found procedure
 		 */
-		char  *baseargv[NUM_OBJS];
-		char **argv = baseargv;
+		const char  *baseargv[NUM_OBJS];
+		const char **argv = baseargv;
 
 		if (objc > NUM_OBJS) {
-		    New(666, argv, objc, char *);
+		    New(666, argv, objc, const char *);
 		}
 
 		argv[0] = cmdName;
@@ -1632,8 +1627,8 @@ Tcl_SplitList(interp, str)
 	Tcl		interp
 	char *		str
 	int		argc = NO_INIT
-	char **		argv = NO_INIT
-	char **		tofree = NO_INIT
+	const char **	argv = NO_INIT
+	const char **	tofree = NO_INIT
     PPCODE:
 	if (Tcl_SplitList(interp, str, &argc, &argv) == TCL_OK)
 	{
