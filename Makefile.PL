@@ -178,7 +178,7 @@ if (defined($libpath) && defined($incpath)) {
 
 	my $tclver = $tclcfg{tcl_version};
 
-	if ($tclcfg{tcl_library} =~ /^(.*)[\\\/]lib[\\\/]/) {
+	if ($tclcfg{tcl_library} =~ /^(.*)[\\\/]lib(?:[\\\/]|$)/) {
 	    $libpath = "-L$1/lib";
 	    $incpath = "-I$1/include";
 	    $defs .= " -DLIB_RUNTIME_DIR=\\\"$1/lib\\\"" if $usestubs;
