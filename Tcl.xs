@@ -1706,6 +1706,10 @@ Tcl_UnsetVar2(interp, varname1, varname2, flags = 0)
     OUTPUT:
 	RETVAL
 
+int
+Tcl_InterpDeleted(interp)
+	Tcl interp
+
 
 MODULE = Tcl		PACKAGE = Tcl::List
 
@@ -1865,7 +1869,6 @@ BOOT:
 	newCONSTSUB(stash, "TRACE_WRITES",     newSViv(TCL_TRACE_WRITES));
 	newCONSTSUB(stash, "TRACE_UNSETS",     newSViv(TCL_TRACE_UNSETS));
 	newCONSTSUB(stash, "TRACE_DESTROYED",  newSViv(TCL_TRACE_DESTROYED));
-	newCONSTSUB(stash, "INTERP_DESTROYED", newSViv(TCL_INTERP_DESTROYED));
 	newCONSTSUB(stash, "LEAVE_ERR_MSG",    newSViv(TCL_LEAVE_ERR_MSG));
 	newCONSTSUB(stash, "TRACE_ARRAY",      newSViv(TCL_TRACE_ARRAY));
 

@@ -375,6 +375,10 @@ behaves as in I<SetVar> above.
 Unsets the element VARNAME1(VARNAME2) of a Tcl array.
 The optional argument FLAGS behaves as in I<SetVar> above.
 
+=item $interp->InterpDeleted ()
+
+See Tcl C API documentation for I<Tcl_InterpDeleted>().
+
 =back
 
 =head2 Linking Perl and Tcl variables
