@@ -314,7 +314,7 @@ only when the last usage is purged does the entry get purged from the command ta
 
 While the internal tracking structure saves the INTERP the code was added to,
 it itself does not keep things separated by INTERP,
-A TCLNAME or DESCRNAMe can only exist in one INTERP at a time,
+A TCLNAME or DESCRNAME can only exist in one INTERP at a time,
 using a new INTERP just causes the one in the last INTERP to disappear,
 and probably end up with the Tcl code getting deleted
 
