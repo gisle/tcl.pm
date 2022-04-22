@@ -18,12 +18,6 @@
 #define DEBUG_REFCOUNTS 0
 #endif
 
-/*
- * Both Perl and Tcl use these macros
- */
-#undef STRINGIFY
-#undef JOIN
-
 #include <tcl.h>
 
 #ifdef USE_TCL_STUBS
