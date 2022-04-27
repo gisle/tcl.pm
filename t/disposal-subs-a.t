@@ -222,20 +222,11 @@ sub refcts {
 sub flush_afters{
   my $inter=shift;
   while(1) {  # wait for afters to finish
-    my $info0=insure_ptrarray($inter,'after', 'info');
-    last unless (scalar(@$info0));
+    my @info0=$inter->icall('after', 'info');
+    last unless (scalar(@info0));
     $inter->icall('after', 1000, 'set var fafafa');
     $inter->icall('vwait', 'var'); # will wait for 1 seconds
   }
-}
-
-sub insure_ptrarray{
-  my $inter=shift;
-  my $list = $inter->icall(@_);
-  if (ref($list) ne 'Tcl::List') {  # v1.02
-      $list=[split(' ',$list)];
-      }
-return $list;
 }
 
 package FakeTcl::Code;
