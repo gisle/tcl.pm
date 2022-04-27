@@ -25,7 +25,7 @@ use strict; use warnings;
 #   2-3-3-3}  $anon_refs{$rname} gets recreated by bless [\$sub, $interp], 'Tcl::Code';
 #
 #
-# but later when tcl tries to use $tclname as a command alias, its been destoryed
+# but later when tcl tries to use $tclname as a command alias, its been destroyed
 #   Tcl error 'invalid command name "::perl::CODE(0x8e4e2a8)"
 #      at ./blib/lib/Tcl.pm line ####.
 #      while invoking scalar result call:
