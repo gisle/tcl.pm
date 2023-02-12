@@ -13,7 +13,7 @@ whole of libtk via this Tcl extension.
 
 Using "tcl stubs", module could be built even without tcl-dev package
 installed on system. Still, tcl (or tcl/tk) must be installed during module
-build. `--nousestubs` also supported. Tcl versions 8.0, 8.4, 8.5, 8.6 and above are
+build. `--nousestubs` also supported. Tcl versions 8.4, 8.5, 8.6 and above are
 supported.
 
 # Install
