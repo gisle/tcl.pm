@@ -546,25 +546,39 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 	 */
 	sv = newSV(0);
     }
-    else if (objPtr->typePtr == tclIntTypePtr) {
-	sv = newSViv(objPtr->internalRep.longValue);
+    /* Must check this now in case any tcl…TypePtr's are NULL */
+    else if (objPtr->typePtr == NULL) {
+	goto handle_as_string;
+    }
+    else if ((objPtr->typePtr == tclIntTypePtr) ||
+	     (objPtr->typePtr == tclWideIntTypePtr)) {
+	/*
+	 * Tcl TIP 484 means that value type "int" may be 64-bit
+	 * even on 32-bit systems.
+	 */
+	Tcl_WideInt w;
+	Tcl_GetWideIntFromObj(NULL, objPtr, &w); /* must return TCL_OK */
+	if (IVSIZE >= sizeof(Tcl_WideInt) ||
+	    (w >= (Tcl_WideInt)IV_MIN && w <= (Tcl_WideInt)IV_MAX)
+	   ) {
+	    sv = newSViv(w);
+	} else if (w >= (Tcl_WideInt)UV_MIN && w <= (Tcl_WideInt)UV_MAX) {
+	    sv = newSVuv(w);
+	} else {
+	    goto handle_as_string;
+	}
     }
     else if (objPtr->typePtr == tclDoubleTypePtr) {
 	sv = newSVnv(objPtr->internalRep.doubleValue);
     }
     else if (objPtr->typePtr == tclBooleanTypePtr) {
 	/*
-	 * Booleans can originate as words (yes/true/...), so if there is a
-	 * string rep, use it instead.  We could check if the first byte
-	 * isdigit().  No need to check utf-8 as the all valid boolean words
-	 * are ascii-7.
+	 * Returning 0 or 1 to Perl is more useful than returning string boolean
+	 * (i.e. "true"/"false"/"yes"/"no"/"on"/"off").
 	 */
-	if (objPtr->typePtr == NULL) {
-	    sv = newSVsv(boolSV(objPtr->internalRep.longValue != 0));
-	} else {
-	    str = Tcl_GetStringFromObj(objPtr, &len);
-	    sv = newSVpvn(str, len);
-	}
+	int boolValue;
+	Tcl_GetBooleanFromObj(NULL, objPtr, &boolValue); /* must return TCL_OK */
+	sv = newSVsv(boolSV(boolValue));
     }
     else if (objPtr->typePtr == tclByteArrayTypePtr) {
 	str = (const char *) Tcl_GetByteArrayFromObj(objPtr, &len);
@@ -601,8 +615,9 @@ SvFromTclObj(pTHX_ Tcl_Obj *objPtr)
 	}
     }
     /* tclStringTypePtr is true unicode */
-    /* tclWideIntTypePtr is 64-bit int */
+    /* may also be handling int/wideInt outside of [IV_MIN,UV_MAX] */
     else {
+handle_as_string:
 	str = Tcl_GetStringFromObj(objPtr, &len);
 	sv = newSVpvn(str, len);
 	/* should turn on, but let's check this first for efficiency */
@@ -1838,13 +1853,44 @@ BOOT:
 	hvInterps = newHV();
     }
 
-    tclBooleanTypePtr   = Tcl_GetObjType("boolean");
-    tclByteArrayTypePtr = Tcl_GetObjType("bytearray");
     tclDoubleTypePtr    = Tcl_GetObjType("double");
-    tclIntTypePtr       = Tcl_GetObjType("int");
     tclListTypePtr      = Tcl_GetObjType("list");
     tclStringTypePtr    = Tcl_GetObjType("string");
-    tclWideIntTypePtr   = Tcl_GetObjType("wideInt");
+    {
+	/* As of Tcl 9.0, Tcl_GetObjType() returns NULL for these types */
+
+	Tcl_Obj *objPtr;
+	int boolValue;
+
+	/* As suggested at https://core.tcl-lang.org/tcl/info/3bb3bcf2da5b */
+	objPtr = Tcl_NewStringObj("true", -1);
+	Tcl_GetBooleanFromObj(NULL, objPtr, &boolValue); /* must return TCL_OK */
+	tclBooleanTypePtr = objPtr->typePtr;
+	Tcl_DecrRefCount(objPtr);
+
+	/* As suggested by TIP 484 */
+	objPtr = Tcl_NewIntObj(0);
+	tclIntTypePtr = objPtr->typePtr;
+	Tcl_DecrRefCount(objPtr);
+
+	/*
+	 * Retrieve the 64-bit type, which is either "wideInt" or "int";
+	 * the "wideInt" type is only available when the "int" type is 32-bit.
+	 */
+	objPtr = Tcl_NewWideIntObj(
+		/*
+		 * Must use a value wider than 32-bit here, otherwise
+		 * Tcl_NewWideIntObj() could return a 32-bit "int".
+		 */
+		(Tcl_WideInt)(1) << 32
+	);
+	tclWideIntTypePtr = objPtr->typePtr;
+	Tcl_DecrRefCount(objPtr);
+
+	objPtr = Tcl_NewByteArrayObj(NULL, 0);
+	tclByteArrayTypePtr = objPtr->typePtr;
+	Tcl_DecrRefCount(objPtr);
+    }
 
     /* set up constant subs */
     {
