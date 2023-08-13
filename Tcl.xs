@@ -76,6 +76,7 @@ static char defaultLibraryDir[sizeof(LIB_RUNTIME_DIR)+200] = LIB_RUNTIME_DIR;
 
 #elif defined(__APPLE__)
 
+#ifdef SEE_TICKET_125664 /*sorry, no replacement for deprecated function */
 #include <CoreServices/CoreServices.h>
 
 static short DOMAINS[] = {
@@ -85,6 +86,7 @@ static short DOMAINS[] = {
     kSystemDomain
 };
 static const int DOMAINS_LEN = sizeof(DOMAINS)/sizeof(DOMAINS[0]);
+#endif
 
 #elif defined(__hpux)
 /* HPUX requires shl_* routines */
