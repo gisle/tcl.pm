@@ -730,10 +730,10 @@ sub create_tcl_sub {
     #print STDERR "...=$descrname\n";
 
     # the following is a bit more tricky than it seems to.
-    # because the whole intent of the Tcl:Cmdbase entries in %anon_refs hash is to have refcount
+    # because the whole intent of the Tcl::Cmdbase entries in %anon_refs hash is to have refcount
     # of (possibly) anonymous sub that is happen to be passed,
     # and, if passed for the same widget but arguments are same - then
-    # previous instance will be overwriten, and sub will be destroyed due
+    # previous instance will be overwritten, and sub will be destroyed due
     # to no reference count, and command table entry will also be destroyed during
     # Tcl::Cmdbase::DESTROY
 
@@ -744,7 +744,7 @@ sub create_tcl_sub {
                                     ],'Tcl::Cmdbase');
       $interp->CreateCommand($tclname, $sub, undef, undef, 1);
 
-      print "TCL::TRACE_CREATECOMMAND: $interp -> $descrname ( $tclname => $sub ,undef,udef,1 )\n" if TRACE_CREATECOMMAND();
+      print "TCL::TRACE_CREATECOMMAND: $interp -> $descrname ( $tclname => $sub ,undef,undef,1 )\n" if TRACE_CREATECOMMAND();
       delete $anon_refs{$descrname};
     }
     my @newtcl=@{$anon_refs{$tclname}[0]};
