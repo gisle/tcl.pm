@@ -243,12 +243,6 @@ my $mm = WriteMakefile(
     DEFINE => $defs,
     @extraargs,
 );
-if (0 and $mm->is_make_type('dmake')) { # Mmm. no. d-make welcome. problem was somewhere else
-    unlink('Makefile');
-    _die <<'EOS';
-dmake prohibited. It does bla-bla-bla
-EOS
-}
 
 sub process_tclconfig {
     # Process a tclConfig.sh file for build info
