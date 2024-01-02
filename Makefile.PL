@@ -212,6 +212,9 @@ my $mm = WriteMakefile(
     META_MERGE => {
         "meta-spec" => { version => 2 },
         resources => {
+            bugtracker => {
+                web => 'https://github.com/gisle/tcl.pm/issues',
+            },
             repository => {
                 type => 'git',
                 web => 'https://github.com/gisle/tcl.pm',
