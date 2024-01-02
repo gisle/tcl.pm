@@ -83,7 +83,7 @@ EOS
 
 
 # Check bytearray
-{
+if ($i->GetVar("tcl_version") >= 8.6) {
     # Command which returns a bytearray
     # (e.g. one whose contents are not valid UTF-8)
     my $hexdata = 'e08080ff';
@@ -96,3 +96,8 @@ EOS
 
     ok(join('', (unpack 'H*', $i->Eval($bytearraycmd))), $hexdata);
 }
+else {
+    print "skipped test for tcl version ". $i->GetVar("tcl_version") . "\n"; # TODO - better
+    ok(1);
+}
+
