@@ -231,12 +231,12 @@ my $mm = WriteMakefile(
 
 sub process_tclconfig {
     # Process a tclConfig.sh file for build info
-    my $tclconfig = shift;
-    my $hashref   = shift;
+    my $tclconf = shift;
+    my $hashref = shift;
 
     if ($^O eq 'MSWin32') {
-	    open my $fh, $tclconfig or _die "error opening file '$tclconfig': $!\n";
-	    print "Using config data in $tclconfig\n";
+	    open my $fh, $tclconf or _die "error opening file '$tclconf': $!\n";
+	    print "Using config data in $tclconf\n";
 	    %$hashref = (join '', <$fh>) =~ /^(\w+)=['"]?(.*?)["']?$/gm;
 	    $hashref->{TCL_EXEC_PREFIX}=~y{\\}{/}; # hack for MSWin32
 
@@ -252,6 +252,7 @@ sub process_tclconfig {
 	    # because we could have there
 	    # #! /bin/sh
 	    # . /usr/lib/`dpkg-architecture -qDEB_HOST_MULTIARCH`/tcl8.6/tclConfig.sh
+	    -f $tclconf or _die "no file '$tclconf'\n";
 	    my $vars2get = join ';', map {qq/echo 'echo "$_=\$$_"'/} qw (
 		TCL_STUB_LIB_PATH
 		TCL_STUB_LIB_SPEC
@@ -259,7 +260,7 @@ sub process_tclconfig {
 		TCL_INCLUDE_SPEC
 		TCL_EXEC_PREFIX
 	    );
-	    my %vars = `(cat $tclconfig; $vars2get) | bash` =~ /^(\w+)=(.*)$/mg;
+	    my %vars = `(cat $tclconf; $vars2get) | bash` =~ /^(\w+)=(.*)$/mg;
 	    $hashref->{$_} = $vars{$_} for keys %vars;
     }
 

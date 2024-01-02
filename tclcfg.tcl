@@ -10,6 +10,7 @@ set dirs [list \
 	      [file dirname $libdir] \
 	      [file dirname [file dirname $libdir]] \
 	      [file join [file dirname [file dirname [info nameofexe]]] lib] \
+	      [file join $libdir "tcl$tcl_version"] \
 	     ]
 foreach dir $dirs {
     if {[file exists [file join $dir tclConfig.sh]]} {
