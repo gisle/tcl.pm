@@ -1,6 +1,6 @@
 package Tcl;
 
-$Tcl::VERSION = '1.27';
+$Tcl::VERSION = '1.28';
 
 =head1 NAME
 
