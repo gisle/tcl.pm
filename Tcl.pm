@@ -1,6 +1,6 @@
 package Tcl;
 
-$Tcl::VERSION = '1.28';
+$Tcl::VERSION = '1.29';
 
 =head1 NAME
 
@@ -1183,4 +1183,3 @@ See http://www.perl.com/perl/misc/Artistic.html
 =cut
 
 1;
-

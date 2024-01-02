@@ -256,7 +256,7 @@ sub process_tclconfig {
 		TCL_INCLUDE_SPEC
 		TCL_EXEC_PREFIX
 	    );
-	    my %vars = `(cat /usr/lib/tclConfig.sh; $vars2get) | bash` =~ /^(\w+)=(.*)$/mg;
+	    my %vars = `(cat $tclconfig; $vars2get) | bash` =~ /^(\w+)=(.*)$/mg;
 	    $hashref->{$_} = $vars{$_} for keys %vars;
     }
 
