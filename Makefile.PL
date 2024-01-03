@@ -120,11 +120,11 @@ if (defined($libpath) && defined($incpath)) {
     if ($^O eq 'darwin' && !defined($tclconfig)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
-    if ($^O eq 'MSWin32' && !defined($tclconfig) && (1 or !$usestubs)) {
+    if ($^O eq 'MSWin32' && !defined($tclconfig)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
 
-    if (!defined($tclconfig) && $arch && $usestubs) {
+    if (0 && !defined($tclconfig) && $arch && $usestubs) {
 	$incpath = "-Itcl-core/include";
 	$libpath = "-Ltcl-core/$arch -l$stub";
 	if ($^O eq 'darwin') {
@@ -175,7 +175,7 @@ if (defined($libpath) && defined($incpath)) {
     } else {
 	# no --tclconfig=... -> get values from ./tclcfg.tcl
 	process_tclconfig($tclcfg{'tclConfig.sh'}, \%tclcfg);
-	$libpath = $usestubs? $tclcfg{TCL_STUB_LIB_SPEC} : $tclcfg{TCL_LIB_SPEC};
+	$libpath = $usestubs? "$tclcfg{TCL_LIB_SPEC} $tclcfg{TCL_STUB_LIB_SPEC}" : $tclcfg{TCL_LIB_SPEC};
 	$incpath = $tclcfg{TCL_INCLUDE_SPEC};
 	#?? $defs .= " -DLIB_RUNTIME_DIR=\\\"$1/lib\\\"" if $usestubs;
 	#?? $defs .= " -DTCL_LIB_FILE=\\\"tcl$tclver.$Config{so}\\\"" if $usestubs;
@@ -192,7 +192,7 @@ print "tclConfig.sh = ", $tclconfig || "", "\n";
 
 if ($^O eq 'darwin') {
     # darwin has a broken ranlib that requires you to run it anytime
-    # you copy an archive file, so ensure ours iы up-to-date
+    # you copy an archive file, so ensure ours is up-to-date
     system("ranlib tcl-core/$arch/libtclstub8.4.a");
     system("git update-index --assume-unchanged tcl-core/$arch/libtclstub8.4.a")
 	if -d ".git";
@@ -260,11 +260,10 @@ sub process_tclconfig {
 		TCL_INCLUDE_SPEC
 		TCL_EXEC_PREFIX
 	    );
-	    my %vars = `(cat $tclconf; $vars2get) | bash` =~ /^(\w+)=(.*)$/mg;
+	    my %vars = `(cat $tclconf; $vars2get) | sh` =~ /^(\w+)=(.*)$/mg;
 	    $hashref->{$_} = $vars{$_} for keys %vars;
     }
-
-    $hashref->{tcl_version} = $hashref->{TCL_VERSION};
+    $hashref->{tcl_version} = $hashref->{TCL_VERSION} if exists $hashref->{TCL_VERSION};
 }
 
 sub MY::libscan {
