@@ -246,8 +246,8 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	 * fail if the user has requested an alternate TCL_LIB_FILE.
 	 */
         strcat(libname, "/Tcl.framework/" TCL_LIB_FILE);
-	/* printf("Try \"%s\"\n", libname); */
 	handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
+	sprintf(buffer,"%sfailed dlopen(%s,...);\n", buffer, libname);
         if (handle) {
             break;
 	}
@@ -269,9 +269,9 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
 	}
 	if (!handle) {
-	    sprintf(buffer,"%sfailed dlopen(%s,...);\n", buffer, libname);
 	    /* Try based on anywhere in the path. */
 	    strcpy(libname, TCL_LIB_FILE);
+	    sprintf(buffer,"%sfailed dlopen(%s,...);\n", buffer, libname);
 	    handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
 	}
 	if (!handle) {
