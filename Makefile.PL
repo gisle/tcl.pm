@@ -62,7 +62,6 @@ GetOptions(
    "library=s",   \ my $libpath,
    "include=s",   \ my $incpath,
    "define=s",    \(my $defs=''),
-   "hack1!",      \(my $hack1=0),
    "help!",       \ my $help,   
 ) || usage();
 usage() if $help;
@@ -79,7 +78,6 @@ Customised usage:
   [--library=...]      \ # Use this specific Tcl library
   [--include=...]      \ # Use this specific include path
   [--define=...]       \ # Use this specific set of defines
-  [--nohack1]          \ # internal usage, please RTFS word 'hack1'
   [--help]             \ # --help
   [<makemaker opts>]     # e.g. LINKTYPE=STATIC
 
@@ -115,12 +113,10 @@ if (defined($libpath) && defined($incpath)) {
 
     my %tclcfg = $tclcfg =~ /^([^=]+)=(.*?)$/gm;
 
-    $defs .= " -DTCLSH_PATH=\\\"".([$tclcfg{tclsh}=~/^(.*)\//]->[0])."\\\""; #haack
-
     if ($^O eq 'darwin' && !defined($tclconfig)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
-    if ($^O eq 'MSWin32' && !defined($tclconfig)) {
+    if (0 and $^O eq 'MSWin32' && !defined($tclconfig)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
 
@@ -137,19 +133,6 @@ if (defined($libpath) && defined($incpath)) {
 	# Retrieve all info based on tclConfig.sh
 	process_tclconfig($tclconfig, \%tclcfg);
 
-	if ($hack1 and q{
-	    HACK1: on $^O eq 'MSWin32' activetcl 866 stub library could not be linked
-	           with gcc which comes with strawberry;
-		   860 is good.
-	     }) { # hopefully this will be:  if (0 and q{....})
-	    if ($usestubs and $^O eq 'MSWin32') {
-	        $stub = "tclstub84"; # use our stub, not their
-		$libpath = "-Ltcl-core/$arch -l$stub";
-		$incpath = "-Itcl-core/include";
-		$tclcfg{TCL_STUB_LIB_SPEC} = $libpath;
-		$tclcfg{TCL_LIB_FILE} = $tclcfg{TCL_DLL_FILE};
-	    }
-	}
 	$libpath = $usestubs ? $tclcfg{TCL_STUB_LIB_SPEC} : $tclcfg{TCL_LIB_SPEC};
 	$incpath = $tclcfg{TCL_INCLUDE_SPEC};
 
@@ -178,7 +161,8 @@ if (defined($libpath) && defined($incpath)) {
 	$libpath = $usestubs? "$tclcfg{TCL_LIB_SPEC} $tclcfg{TCL_STUB_LIB_SPEC}" : $tclcfg{TCL_LIB_SPEC};
 	$incpath = $tclcfg{TCL_INCLUDE_SPEC};
 	#?? $defs .= " -DLIB_RUNTIME_DIR=\\\"$1/lib\\\"" if $usestubs;
-	#?? $defs .= " -DTCL_LIB_FILE=\\\"tcl$tclver.$Config{so}\\\"" if $usestubs;
+	$tclcfg{TCL_LIB_FILE} = $tclcfg{TCL_DLL_FILE} if $^O eq 'MSWin32'; # HACK: WHY TF this is in tclConfig.sh on win32??
+	$defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\"";
     }
     # version must be 8.4+
     _die "Tcl requires Tcl v8.4 or greater, found '$tclcfg{tcl_version}'\n"
@@ -257,6 +241,8 @@ sub process_tclconfig {
 		TCL_STUB_LIB_PATH
 		TCL_STUB_LIB_SPEC
 		TCL_LIB_SPEC
+		TCL_LIB_FILE
+		TCL_DLL_FILE
 		TCL_INCLUDE_SPEC
 		TCL_EXEC_PREFIX
 	    );
