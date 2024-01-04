@@ -4,7 +4,7 @@
  *	This file contains XS code for the Perl's Tcl bridge module.
  *
  * Copyright (c) 1994-1997, Malcolm Beattie
- * Copyright (c) 2003-2018, Vadim Konovalov
+ * Copyright (c) 2003-2024, Vadim Konovalov
  * Copyright (c) 2004 ActiveState Corp., a division of Sophos PLC
  *
  */
@@ -281,7 +281,7 @@ NpLoadLibrary(pTHX_ HMODULE *tclHandle, char *dllFilename, int dllFilenameSize)
 	    if (*pos == '.') {
 		pos++;
 	    }
-	    *pos = '9'; /* count down from '9' to '0': 8.9, 8.8, 8.7, 8.6, ... */
+	    *pos = '7'; /* count down from '7' to '0': 8.7, 8.6, 8.5, 8.4, ... */
 	    do {
 		sprintf(buffer,"%strying dlopen(%s,...)\n", buffer, libname);
 		handle = dlopen(libname, RTLD_NOW | RTLD_GLOBAL);
