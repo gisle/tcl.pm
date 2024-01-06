@@ -116,9 +116,6 @@ if (defined($libpath) && defined($incpath)) {
     if ($^O eq 'darwin' && !defined($tclconfig)) {
         $tclconfig = $tclcfg{'tclConfig.sh'};
     }
-    if (0 and $^O eq 'MSWin32' && !defined($tclconfig)) {
-        $tclconfig = $tclcfg{'tclConfig.sh'};
-    }
 
     if (0 && !defined($tclconfig) && $arch && $usestubs) {
 	$incpath = "-Itcl-core/include";
@@ -158,8 +155,22 @@ if (defined($libpath) && defined($incpath)) {
     } else {
 	# no --tclconfig=... -> get values from ./tclcfg.tcl
 	process_tclconfig($tclcfg{'tclConfig.sh'}, \%tclcfg);
-	$libpath = $usestubs? "$tclcfg{TCL_LIB_SPEC} $tclcfg{TCL_STUB_LIB_SPEC}" : $tclcfg{TCL_LIB_SPEC};
+	$libpath = $usestubs ? "$tclcfg{TCL_LIB_SPEC} $tclcfg{TCL_STUB_LIB_SPEC}" : $tclcfg{TCL_LIB_SPEC};
 	$incpath = $tclcfg{TCL_INCLUDE_SPEC};
+	if ($incpath) {
+	    my @tclh = grep {-f "$_/tcl.h"} $incpath=~/-I(\S+)/g;
+	    if ($#tclh==-1) {
+		warn "incpath $incpath from your tclconfig $tclconfig does not provide tcl.h";
+		# on windows users tend to not have correctly edited include path, like this:
+		# -I/C/BawtBuilds/TclMinimal/TclMinimal-8.6.12/Windows/x86/Release/Install/Tcl/include
+		# help them
+		if ($^O eq 'MSWin32') {
+		    $tclcfg{'tclConfig.sh'} =~ /^(.*)[\\\/][^\\\/]+$/;
+		    $incpath = "-I$1/../include";
+		    $libpath = "-L$1 $libpath";
+		} else {_die "can't continue"}
+	    }
+	}
 	#?? $defs .= " -DLIB_RUNTIME_DIR=\\\"$1/lib\\\"" if $usestubs;
 	$tclcfg{TCL_LIB_FILE} = $tclcfg{TCL_DLL_FILE} if $^O eq 'MSWin32'; # HACK: WHY TF this is in tclConfig.sh on win32??
 	$defs .= " -DTCL_LIB_FILE=\\\"$tclcfg{TCL_LIB_FILE}\\\"";
@@ -221,7 +232,8 @@ sub process_tclconfig {
     if ($^O eq 'MSWin32') {
 	    open my $fh, $tclconf or _die "error opening file '$tclconf': $!\n";
 	    print "Using config data in $tclconf\n";
-	    %$hashref = (join '', <$fh>) =~ /^(\w+)=['"]?(.*?)["']?$/gm;
+	    my %vars = (join '', <$fh>) =~ /^(\w+)=['"]?(.*?)["']?$/gm;
+	    $hashref->{$_} = $vars{$_} for keys %vars;
 	    $hashref->{TCL_EXEC_PREFIX}=~y{\\}{/}; # hack for MSWin32
 
 	    for my $k (keys %$hashref) {
