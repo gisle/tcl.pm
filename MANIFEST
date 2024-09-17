@@ -8,6 +8,7 @@ Tcl.xs			Tcl extension implementation
 t/call.t		See the 'call' and 'icall' methods
 t/constants.t		See if constants and flags are set up properly
 t/createcmd.t		See if command creation works
+t/createcmd2.t		See if command creation works (multiple interpreters)
 t/eval.t		See if Eval-ish things work
 t/info.t	        See if Tcl info command works
 t/result.t		See if Tcl result protocol works
