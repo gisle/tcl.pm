@@ -407,6 +407,17 @@ Omit the I<$flags> argument if not wanted. Any alteration to Perl
 variable I<$hash{"key"}> affects the Tcl variable I<array(key)>
 and I<vice versa>.
 
+For Tcl variables which are known to contain a list, an extra class
+is available:
+
+	tie @array, "Tcl::AList", $interp, "listvar", $flags;
+
+Any regular operation on arrays is supported, plus
+C<delete($array[$index])> which is a synonym for
+C<splice(@array, $index, 1)> and C<exists($array[$index])>
+which is a synonym for C<defined($array[$index])>. Modifying
+actions are reflected in Tcl.
+
 =head2 Accessing Perl from within Tcl
 
 After creation of Tcl interpreter, in addition to evaluation of Tcl/Tk
@@ -898,6 +909,222 @@ package Tcl::List;
 
 use overload '""' => \&as_string,
              fallback => 1;
+
+
+package Tcl::AList;
+
+use strict;
+
+sub TIEARRAY {
+    my $class = shift;
+    my @objdata = @_;
+    unless (@_ == 2 || @_ == 3) {
+	require Carp;
+	Carp::croak('Usage: tie @a, Tcl::AList, $interp, $varname [, $flags]');
+    };
+    bless \@objdata, $class;
+}
+
+sub _split {
+    my $obj = shift;
+    my ($interp, $varname, $flags) = @{$obj};
+    my $str = $interp->GetVar($varname, $flags || 0);
+    return $interp->SplitList($str);
+}
+
+sub _join {
+    my ($obj, @list) = @_;
+    my ($interp, $varname, $flags) = @{$obj};
+    my $str = $interp->invoke('list', @list).'';
+    $interp->SetVar($varname, $str, $flags || 0);
+}
+
+sub FETCH {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("FETCH Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    unless(@_ == 1) {
+        require Carp;
+        Carp::croak("FETCH Usage: args @_, not idx");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my $idx = $_[0];
+    my @tmp = $obj->_split();
+    return $tmp[$idx];
+}
+
+sub STORE {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("STORE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    unless(@_ == 2) {
+        require Carp;
+        Carp::croak("STORE Usage: args @_, not idx => value");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my ($idx, $value) = @_;
+    my @tmp = $obj->_split();
+    $tmp[$idx] = $value;
+    $obj->_join(@tmp);
+}
+
+sub FETCHSIZE {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("FETCHSIZE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    unless(@_ == 0) {
+        require Carp;
+        Carp::croak("FETCHSIZE Usage: args @_, not <none>");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my @tmp = $obj->_split();
+    return scalar(@tmp);
+}
+
+sub STORESIZE {
+    1;
+}
+
+sub CLEAR {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("CLEAR Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    unless(@_ == 0) {
+        require Carp;
+        Carp::croak("CLEAR Usage: args @_, not <none>");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    $interp->SetVar($varname, '', $flags || 0);
+}
+
+sub PUSH {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("PUSH Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my @add = @_;
+    my @tmp = $obj->_split();
+    push(@tmp, @add);
+    $obj->_join(@tmp);
+}
+
+sub POP {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("POP Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    unless(@_ == 0) {
+        require Carp;
+        Carp::croak("POP Usage: args @_, not <none>");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my @tmp = $obj->_split();
+    my $value = pop(@tmp);
+    $obj->_join(@tmp);
+    return $value;
+}
+
+sub SHIFT {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("SHIFT Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    unless(@_ == 0) {
+        require Carp;
+        Carp::croak("SHIFT Usage: args @_, not <none>");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my @tmp = $obj->_split();
+    my $value = shift(@tmp);
+    $obj->_join(@tmp);
+    return $value;
+}
+
+sub UNSHIFT {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("UNSHIFT Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my @add = @_;
+    my @tmp = $obj->_split();
+    unshift(@tmp, @add);
+    $obj->_join(@tmp);
+}
+
+sub SPLICE {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("SPLICE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my @args = @_;
+    my @tmp = $obj->_split();
+    my @res = splice(@tmp, @args);
+    $obj->_join(@tmp);
+    return @res;
+}
+
+sub EXTEND {
+    1;
+}
+
+sub DELETE {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("DELETE Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my @idxs = @_;
+    my @tmp = $obj->_split();
+    my @res;
+    foreach my $idx (sort { $b <=> $a } @idxs) {
+      push(@res, splice(@tmp, $idx, 1));
+    }
+    $obj->_join(@tmp);
+    return wantarray() ? @res : $res[-1];
+}
+
+sub EXISTS {
+    my $obj = shift;
+    unless(@{$obj} == 2 || @{$obj} == 3) {
+        require Carp;
+        Carp::croak("EXISTS Usage: objdata @{$obj} $#{$obj}, not 2 or 3 (@_)");
+    }
+    unless(@_ == 1) {
+        require Carp;
+        Carp::croak("EXISTS Usage: args @_, not idx");
+    }
+    my ($interp, $varname, $flags) = @{$obj};
+    my ($idx) = @_;
+    my @tmp = $obj->_split();
+    return defined($tmp[$idx]);
+}
+
+sub UNTIE {
+    my $ref = shift;
+    #print STDERR "UNTIE:$ref(@_)\n";
+}
+
+sub DESTROY {
+    my $ref = shift;
+}
+
 
 package Tcl::Var;
 
