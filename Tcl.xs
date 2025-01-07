@@ -382,14 +382,6 @@ NpInitialize(pTHX_ SV *X)
 {
     static Tcl_Interp * (* createInterp)() = NULL;
     static void (* findExecutable)(char *) = NULL;
-    /*
-     * We want the Tcl_InitStubs func static to ourselves - before Tcl
-     * is loaded dynamically and possibly changes it.
-     * Variable initstubs have to be declared as volatile to prevent
-     * compiler optimizing it out.
-     */
-    static const char *(*volatile initstubs)(Tcl_Interp *, const char *, int)
-	= Tcl_InitStubs;
     char dllFilename[MAX_PATH];
     dllFilename[0] = '\0';
 
@@ -421,11 +413,8 @@ NpInitialize(pTHX_ SV *X)
 #endif
 	    return TCL_ERROR;
 	}
-	DLSYM(tclHandle, "Tcl_FindExecutable", void (*)(char *),
-		findExecutable);
-
-	DLSYM(tclHandle, "TclKit_AppInit", int (*)(Tcl_Interp *),
-		tclKit_AppInit);
+	DLSYM(tclHandle, "Tcl_FindExecutable", void (*)(char *), findExecutable);
+	DLSYM(tclHandle, "TclKit_AppInit", int (*)(Tcl_Interp *), tclKit_AppInit);
     }
 #else
     createInterp   = Tcl_CreateInterp;
@@ -452,7 +441,7 @@ NpInitialize(pTHX_ SV *X)
      * calls without grabbing them by symbol out of the dll.
      * This will be Tcl_PkgRequire for non-stubs builds.
      */
-    if (initstubs(g_Interp, NULL, 0) == NULL) {
+    if (Tcl_InitStubs(g_Interp, NULL, 0) == NULL) {
 	warn("Failed to initialize Tcl stubs!");
 	return TCL_ERROR;
     }
